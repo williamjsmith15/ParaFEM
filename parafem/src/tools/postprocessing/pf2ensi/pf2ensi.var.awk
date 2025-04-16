@@ -896,18 +896,18 @@ function report_unknown_type() {
 /^$/ { next; }
 
 # ignore NUM keywords
-/^*NUM/ { next; }
+/^\*NUM/ { next; }
 
 # match these keywords and call appropriate start function
-/^*DISPLACEMENT/ { start_dis(); next; }
-/^*NODAL REACTIONS/ { start_rea(); next; }
-/^*PRINCIPAL STRESS/ { start_pri(); next; }
-/^*MISES STRESS/ { start_vms(); next; }
-/^*STRESS/ { start_str(); next; }
-/^*TEMPERATURE/ { start_ttr(); next; }
-/^*FLUX/ { start_flx(); next; }
-/^*NSET/ { start_nset(); next; }
-/^*MATERIAL/ { start_mat(); next; }
+/^\*DISPLACEMENT/ { start_dis(); next; }
+/^\*NODAL REACTIONS/ { start_rea(); next; }
+/^\*PRINCIPAL STRESS/ { start_pri(); next; }
+/^\*MISES STRESS/ { start_vms(); next; }
+/^\*STRESS/ { start_str(); next; }
+/^\*TEMPERATURE/ { start_ttr(); next; }
+/^\*FLUX/ { start_flx(); next; }
+/^\*NSET/ { start_nset(); next; }
+/^\*MATERIAL/ { start_mat(); next; }
 # no keywords for BND, FIX and LDS - are manually "started" in BEGIN
 
 # process non-keyword lines based on mode

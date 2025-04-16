@@ -340,8 +340,8 @@ function do_elements() {
 /^$/ { next; }
 
 # match these keywords and enter appropriate mode
-/^*NODES/ { start_nodes(); next; }
-/^*ELEMENTS/ { start_elements(); next; }
+/^\*NODES/ { start_nodes(); next; }
+/^\*ELEMENTS/ { start_elements(); next; }
 
 # process non-keyword lines based on mode
 mode == "NODE" { do_nodes(); }
