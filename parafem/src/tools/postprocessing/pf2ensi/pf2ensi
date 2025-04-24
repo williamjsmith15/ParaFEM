@@ -122,31 +122,47 @@ fi
 #   STDERR : <messages>
 # --------------------------------------------------------------------------------
 
+echo "Starting geometry processing"
+
 D2GEO=`awk -f $BINLOC/pf2ensi.geo.awk $D2GEO_ARGS $D_FILENAME`
+echo "D2GEO: $D2GEO"
 NUM_NODES=`echo $D2GEO | awk '{print $1}'`
 NUM_CELLS=`echo $D2GEO | awk '{print $2}'`
 NUM_MATS=`echo $D2GEO | awk '{print $3}'`
+
+echo "Number of nodes: $NUM_NODES"
+echo "Number of cells: $NUM_CELLS"
+echo "Number of materials: $NUM_MATS"
 
 D2VAR_ARGS="$D2VAR_ARGS -v num_nodes=$NUM_NODES";
 
 # time info
 NUM_TIME_STEPS=-1
 
+echo "Finished processing geometry file $D_FILENAME"
+echo
+
 # --------------------------------------------------------------------------------
 # Process variables
 # --------------------------------------------------------------------------------
+
+echo "Starting variable processing"
 
 # Add to case file header
 echo "VARIABLE" >> $ENSI_CASE_FILENAME
 
 # check for available ParaFEM data files
 if [ -f $DIS_FILENAME ] && [ $DO_DIS == 1 ]; then
+    echo "Processing displacement file $DIS_FILENAME"
     DIS2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $DIS_FILENAME`
     echo -e "vector per node:\t1\tDisplacement\t""$BASE_FILENAME"".ensi.DISPL-******" >> $ENSI_CASE_FILENAME
     NUM_TIME_STEPS=$DIS2ENSI
+    echo "Finished processing displacement file $DIS_FILENAME"
+    echo
 fi
 
 if [ -f $PRI_FILENAME ] && [ $DO_PRI == 1 ]; then
+    echo "Processing principal stress file $PRI_FILENAME"
     PRI2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $PRI_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$PRI2ENSI
@@ -158,9 +174,12 @@ if [ -f $PRI_FILENAME ] && [ $DO_PRI == 1 ]; then
 	echo -e "scalar per node:\t1\tPrincipal_Stress_2nd\t""$BASE_FILENAME"".ensi.PRISC-******" >> $ENSI_CASE_FILENAME
 	echo -e "scalar per node:\t1\tPrincipal_Stress_Min\t""$BASE_FILENAME"".ensi.PRIMI-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing principal stress file $PRI_FILENAME"
+    echo
 fi
 
 if [ -f $REA_FILENAME ] && [ $DO_REA == 1 ]; then
+    echo "Processing nodal reaction file $REA_FILENAME"
     REA2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $REA_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$REA2ENSI
@@ -170,9 +189,12 @@ if [ -f $REA_FILENAME ] && [ $DO_REA == 1 ]; then
     else
 	echo -e "vector per node:\t1\tNodal_Reactions\t""$BASE_FILENAME"".ensi.NDREA-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing nodal reaction file $REA_FILENAME"
+    echo
 fi
 
 if [ -f $STR_FILENAME ] && [ $DO_STR == 1 ]; then
+    echo "Processing stress file $STR_FILENAME"
     STR2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $STR_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$STR2ENSI
@@ -182,9 +204,12 @@ if [ -f $STR_FILENAME ] && [ $DO_STR == 1 ]; then
     else
 	echo -e "tensor symm per node:\t1\tStress\t""$BASE_FILENAME"".ensi.STRESS-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing stress file $STR_FILENAME"
+    echo
 fi
 
 if [ -f $VMS_FILENAME ] && [ $DO_VMS == 1 ]; then
+    echo "Processing von Mises stress file $VMS_FILENAME"
     VMS2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $VMS_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$VMS2ENSI
@@ -194,9 +219,12 @@ if [ -f $VMS_FILENAME ] && [ $DO_VMS == 1 ]; then
     else
 	echo -e "scalar per node:\t1\tMises_Stress\t""$BASE_FILENAME"".ensi.NDVMS-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing von Mises stress file $VMS_FILENAME"
+    echo
 fi
 
 if [ -f $TTR_FILENAME ] && [ $DO_TTR == 1 ]; then
+    echo "Processing temperature file $TTR_FILENAME"
     TTR2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $TTR_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$TTR2ENSI
@@ -206,9 +234,12 @@ if [ -f $TTR_FILENAME ] && [ $DO_TTR == 1 ]; then
     else
 	echo -e "scalar per node:\t1\tTemperature\t""$BASE_FILENAME"".ensi.NDTTR-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing temperature file $TTR_FILENAME"
+    echo
 fi
 
 if [ -f $FLX_FILENAME ] && [ $DO_FLX == 1 ]; then
+    echo "Processing flux file $FLX_FILENAME"
     FLX2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $FLX_FILENAME`
     if [ $NUM_TIME_STEPS -lt 0 ]; then
 	NUM_TIME_STEPS=$FLX2ENSI
@@ -218,41 +249,58 @@ if [ -f $FLX_FILENAME ] && [ $DO_FLX == 1 ]; then
     else
 	echo -e "vector per node:\t1\tFlux\t""$BASE_FILENAME"".ensi.NDFLX-******" >> $ENSI_CASE_FILENAME
     fi
+    echo "Finished processing flux file $FLX_FILENAME"
+    echo
 fi
 
 PROPID=1
 if [ -f $MAT_FILENAME ] && [ $DO_MAT == 1 ]; then
+    echo "Processing material file $MAT_FILENAME"
     MAT2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $MAT_FILENAME`
     echo "MAT2ENSI: $MAT2ENSI"
     for PROPNAME in $MAT2ENSI; do
 	echo -e "scalar per element:\t\tMaterial_""$PROPNAME""\t""$BASE_FILENAME"".ensi.ELMAT_""$PROPID""_""$PROPNAME" >> $ENSI_CASE_FILENAME
 	(( PROPID++ ))
     done
+    echo "Finished processing material file $MAT_FILENAME"
+    echo
 fi
 
 # partial datasets (unless -do-partial argument is set call will expand to full size datasets
 if [ -f $FIX_FILENAME ] && [ $DO_FIX == 1 ]; then
+    echo "Processing fixed displacement file $FIX_FILENAME"
     FIX2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $D2VAR_ARGS $FIX_FILENAME`
     echo -e "vector per node:\t\tFixed_Displacement\t""$BASE_FILENAME"".ensi.NDFIX" >> $ENSI_CASE_FILENAME
+    echo "Finished processing fixed displacement file $FIX_FILENAME"
+    echo
 fi
 
 if [ -f $BND_FILENAME ] && [ $DO_BND == 1 ]; then
+    echo "Processing bound nodes file $BND_FILENAME"
     BND2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $D2VAR_ARGS $BND_FILENAME`
     echo -e "scalar per node:\t\tBound_Nodes\t""$BASE_FILENAME"".ensi.NDBND" >> $ENSI_CASE_FILENAME
+    echo "Finished processing bound nodes file $BND_FILENAME"
+    echo
 fi
 
 if [ -f $LDS_FILENAME ] && [ $DO_LDS == 1 ]; then
+    echo "Processing loaded nodes file $LDS_FILENAME"
     LDS2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $D2VAR_ARGS $LDS_FILENAME`
     echo -e "vector per node:\t\tLoaded_Nodes\t""$BASE_FILENAME"".ensi.NDLDS" >> $ENSI_CASE_FILENAME
+    echo "Finished processing loaded nodes file $LDS_FILENAME"
+    echo
 fi
 
 NSETID=1
 if [ -f $NSET_FILENAME ] && [ $DO_NSET == 1 ]; then
+    echo "Processing node set file $NSET_FILENAME"
     NSET2ENSI=`awk -f $BINLOC/pf2ensi.var.awk $NSET_FILENAME`
     for NSETNAME in $NSET2ENSI; do
 	echo -e "scalar per node:\t\tNode_Set_$NSETID\t""$BASE_FILENAME"".ensi.NDSET_""$NSETID""_""$NSETNAME" >> $ENSI_CASE_FILENAME
 	(( NSETID++ ))
     done
+    echo "Finished processing node set file $NSET_FILENAME"
+    echo
 fi
 
 # Append Material variable
