@@ -49,6 +49,8 @@ BEGIN {
     # default parsing mode (looking for keyword)
     mode = "KEYWORD";
 
+	delete mat_count;
+
     # flag initialization
     id_given = 0; # use node id given and element id given in GEO file
 
