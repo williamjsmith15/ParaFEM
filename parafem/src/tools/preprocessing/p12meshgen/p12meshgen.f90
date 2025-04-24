@@ -36,6 +36,7 @@ PROGRAM p12meshgen
   INTEGER                :: nstep,npri,count
   INTEGER                :: np_types,nprops
   INTEGER                :: prnwidth,remainder
+  INTEGER                :: dir_f
   REAL(iwp),PARAMETER    :: zero = 0.0_iwp, twelth = 1.0_iwp/12.0_iwp
   REAL(iwp)              :: aa,bb,cc
   REAL(iwp)              :: kx,ky,kz,cp
@@ -771,9 +772,10 @@ PROGRAM p12meshgen
 
       no_f  = nres
       val_f = 100.0_iwp
+      dir_f = 1
 
       DO i = 1, fixed_freedoms
-        WRITE(14,'(I10,E16.8)') no_f(i),val_f(i)
+        WRITE(14,'(I10,I10,E16.8)') no_f(i),dir_f,val_f(i)
       END DO
 
       CLOSE(14)
