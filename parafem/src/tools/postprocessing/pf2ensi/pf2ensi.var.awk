@@ -168,6 +168,9 @@ BEGIN {
     # initialize static (and non-keyword based) datasets
     # --------------------------------------------------------------------------------
 
+    var_file = "";
+    delete mat_var_file;
+
     if( var_type == "NDBND" ) {
     	start_bnd();
 	cur_pid = 0;
@@ -603,12 +606,12 @@ function start_mat() {
 
     # Open variable file for this element scalar data; no time step
     for( prop=1; prop<=num_props; prop++ ) {
-	var_file[prop] = var_base_filename prop "_" mat_prop_label[prop];
-	print "Generating variable file: " var_file[prop] > "/dev/stderr";
+	mat_var_file[prop] = var_base_filename prop "_" mat_prop_label[prop];
+	print "Generating variable file: " mat_var_file[prop] > "/dev/stderr";
 	
-	print "Alya Ensight Gold --- Scalar per-element variable file" > var_file[prop];
-	print "part" > var_file[prop];
-	print "1" > var_file[prop];
+	print "Alya Ensight Gold --- Scalar per-element variable file" > mat_var_file[prop];
+	print "part" > mat_var_file[prop];
+	print "1" > mat_var_file[prop];
     }
 }
 
@@ -627,16 +630,16 @@ function end_mat_element_multiscalar() {
     while( (getline < elem_tmpl_file) > 0 ) {
 	if( ($1 == "tetra4") || ($1 == "tetra10") || ($1 == "hexa8") || ($1 == "hexa20") ) {
 	    for( prop=1; prop<=num_props; prop++ ) {
-		print $1 > var_file[prop];
+		print $1 > mat_var_file[prop];
 	    }
 	} else {
 	    for( prop=1; prop<=num_props; prop++ ) {
-		print elem_prop[$1, prop] > var_file[prop];
+		print elem_prop[$1, prop] > mat_var_file[prop];
 	    }
 	}
     }
     for( prop=1; prop<=num_props; prop++ ) {
-	close(var_file[prop]);
+	close(mat_var_file[prop]);
     }
 }
 
