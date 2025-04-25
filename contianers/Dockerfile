@@ -1,9 +1,9 @@
 FROM ubuntu:20.04
 
-RUN apt-get update
-RUN apt install -y  make \
-		    mpich \
-		    gfortran \
+RUN apt-get update && \
+	apt-get install -y  make \
+			mpich \
+			gfortran \
 			gawk
 
 # RUN apt install -y git-core
