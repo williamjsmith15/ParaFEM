@@ -4,7 +4,8 @@ RUN apt-get update && \
 	apt-get install -y  make \
 			mpich \
 			gfortran \
-			gawk
+			gawk \
+			nano
 
 # RUN apt install -y git-core
 
