@@ -1,0 +1,60 @@
+<tool id="gdps_meshgen_box" name="ParaFEM Box Mesh Generator" version="0.1.0">
+
+    <description>Generate a structured hexahedral box mesh using p12meshgen</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-meshgen:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        NELS=\$(( $nxe * $nye * $nze )) &&
+        AA=\$(awk "BEGIN {printf \"%.8f\", $dim_x / $nxe}") &&
+        BB=\$(awk "BEGIN {printf \"%.8f\", $dim_y / $nye}") &&
+        CC=\$(awk "BEGIN {printf \"%.8f\", $dim_z / $nze}") &&
+        cat > job.mg << MGEOF
+'p123'
+'parafem' \${NELS} $nxe $nze 8
+\${AA} \${BB} \${CC} 1.0 1.0 1.0
+1.0e-6 2000
+0 0
+MGEOF
+        p12meshgen job &&
+        mv job.d '$output_d' &&
+        mv job.bnd '$output_bnd'
+    ]]></command>
+
+    <inputs>
+        <param type="integer" name="nxe" label="Elements in X" value="10"
+               help="Number of elements along the X axis (length)" />
+        <param type="integer" name="nye" label="Elements in Y" value="10"
+               help="Number of elements along the Y axis (width)" />
+        <param type="integer" name="nze" label="Elements in Z" value="10"
+               help="Number of elements along the Z axis (height)" />
+        <param type="float" name="dim_x" label="X dimension (m)" value="1.0"
+               help="Total mesh dimension in X direction (metres)" />
+        <param type="float" name="dim_y" label="Y dimension (m)" value="1.0"
+               help="Total mesh dimension in Y direction (metres)" />
+        <param type="float" name="dim_z" label="Z dimension (m)" value="1.0"
+               help="Total mesh dimension in Z direction (metres)" />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_d" label="Mesh geometry (.d)" />
+        <data format="txt" name="output_bnd" label="Boundary nodes (.bnd)" />
+    </outputs>
+
+    <help>
+Generates a structured 8-node hexahedral box mesh for ParaFEM using p12meshgen.
+
+The mesh is a rectangular box with uniform element sizes. Output files:
+- .d file: nodal coordinates and element connectivity
+- .bnd file: boundary node restraints (all surface nodes)
+
+Coordinate convention: X spans [0, dim_x], Y spans [0, dim_y],
+Z spans [-dim_z, 0] (negative, per ParaFEM convention).
+The downstream BC generator handles this automatically.
+
+The .bnd file restrains ALL boundary nodes. The BC generator tool downstream
+will selectively keep only the nodes that need prescribed values.
+    </help>
+</tool>
