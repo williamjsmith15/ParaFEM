@@ -36,6 +36,10 @@
 CLAUDE.md
 .claude/
 
+# Python
+__pycache__/
+*.pyc
+
 # Testing temp files
 testing_tempfiles/
 
