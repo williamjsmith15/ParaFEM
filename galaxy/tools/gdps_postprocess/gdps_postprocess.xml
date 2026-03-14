@@ -1,0 +1,77 @@
+<tool id="gdps_postprocess" name="ParaFEM Post-Processor" version="0.1.0">
+
+    <description>Package ParaFEM solver output into EnSight Gold format for ParaView</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-postprocess:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p output &&
+        cp '$d_file' output/job.d &&
+        cp '$bnd_file' output/job.bnd &&
+        cp '$fix_file' output/job.fix &&
+        cd output &&
+
+        ## Generate .ensi.geo from .d file using pf2ensi
+        pf2ensi job 2>&1 &&
+
+        ## Unpack solver EnSight output and add to the case directory
+        cd .. && tar xzf '$ensi_tarball' -C output/ 2>/dev/null;
+
+        ## Add NDPTL variable to .case file if present (steady-state p123)
+        if ls output/job.ensi.NDPTL-* 1>/dev/null 2>&1; then
+            echo -e "scalar per node:\t\tPotential\tjob.ensi.NDPTL-******" >> output/job.ensi.case
+        fi &&
+
+        ## Add NDTTR variable to .case file if present (transient p124)
+        if ls output/job.ensi.NDTTR-* 1>/dev/null 2>&1; then
+            NSTEPS=\$(ls output/job.ensi.NDTTR-* | wc -l)
+            echo -e "scalar per node:\t1\tTemperature\tjob.ensi.NDTTR-******" >> output/job.ensi.case
+            echo "TIME" >> output/job.ensi.case
+            echo -e "time set:\t1" >> output/job.ensi.case
+            echo -e "number of steps:\t\${NSTEPS}" >> output/job.ensi.case
+            echo -e "filename start number:\t0" >> output/job.ensi.case
+            echo -e "filename increment:\t1" >> output/job.ensi.case
+            echo "time values:" >> output/job.ensi.case
+            seq 0 \$(( NSTEPS - 1 )) | xargs printf "%10E " >> output/job.ensi.case
+        fi &&
+
+        ## Package everything
+        cd output && tar czf ../ensi_package.tar.gz job.ensi.* &&
+        cd .. && mv ensi_package.tar.gz '$output_ensi' &&
+        cp output/job.ensi.case '$output_case'
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" label="Mesh geometry (.d)"
+               help="ParaFEM .d mesh file" />
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)"
+               help="ParaFEM .bnd file" />
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)"
+               help="ParaFEM .fix file" />
+        <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)"
+               help="Tarball of .ensi.NDPTL-* or .ensi.NDTTR-* files from solver" />
+    </inputs>
+
+    <outputs>
+        <data format="tar.gz" name="output_ensi" label="EnSight Gold package (.tar.gz)"
+               help="Complete EnSight Gold case for ParaView" />
+        <data format="txt" name="output_case" label="EnSight case file (.ensi.case)"
+               help="Case file for reference" />
+    </outputs>
+
+    <help>
+Assembles ParaFEM solver output into a complete EnSight Gold case for ParaView.
+
+Uses pf2ensi to generate the geometry (.ensi.geo) and case (.ensi.case) files
+from the mesh .d file, then adds the solver's scalar field output (NDPTL for
+steady-state potential, NDTTR for transient temperature).
+
+Output is a tarball containing all .ensi.* files. Open the .ensi.case file
+in ParaView to visualize the results.
+
+For steady-state (p123): scalar potential field
+For transient (p124): temperature field with time steps
+    </help>
+</tool>
