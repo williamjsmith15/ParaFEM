@@ -1,0 +1,20 @@
+FROM ubuntu:20.04 AS builder
+
+RUN apt-get update && \
+    apt-get install -y make mpich gfortran gawk && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./parafem /parafem
+WORKDIR /parafem
+RUN ./make-parafem MACHINE=linuxdesktop
+
+FROM ubuntu:20.04
+RUN apt-get update && \
+    apt-get install -y gawk mpich && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /parafem/bin/p12meshgen /usr/local/bin/
+COPY --from=builder /parafem/src/tools/preprocessing/inp2pf/inp2pf /usr/local/bin/
+COPY --from=builder /parafem/src/tools/preprocessing/inp2pf/inp2pf.awk /usr/local/bin/
+
+WORKDIR /work
