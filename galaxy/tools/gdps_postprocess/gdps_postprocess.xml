@@ -9,46 +9,36 @@
     <command><![CDATA[
         mkdir -p output &&
         cp '$d_file' output/job.d &&
-        cp '$bnd_file' output/job.bnd &&
-        cp '$fix_file' output/job.fix &&
-        cd output &&
 
-        ## Generate .ensi.geo from .d file using pf2ensi
-        pf2ensi job 2>&1 &&
+        #if str($bnd_file) != "None"
+            cp '$bnd_file' output/job.bnd &&
+        #end if
 
-        ## Unpack solver EnSight output and add to the case directory
-        cd .. && tar xzf '$ensi_tarball' -C output/ 2>/dev/null;
+        #if str($fix_file) != "None"
+            cp '$fix_file' output/job.fix &&
+        #end if
 
-        ## Add NDPTL variable to .case file if present (steady-state p123)
-        if ls output/job.ensi.NDPTL-* 1>/dev/null 2>&1; then
-            echo -e "scalar per node:\t\tPotential\tjob.ensi.NDPTL-******" >> output/job.ensi.case
-        fi &&
+        cd output && pf2ensi job 2>&1 && cd .. &&
 
-        ## Add NDTTR variable to .case file if present (transient p124)
-        if ls output/job.ensi.NDTTR-* 1>/dev/null 2>&1; then
-            NSTEPS=\$(ls output/job.ensi.NDTTR-* | wc -l)
-            echo -e "scalar per node:\t1\tTemperature\tjob.ensi.NDTTR-******" >> output/job.ensi.case
-            echo "TIME" >> output/job.ensi.case
-            echo -e "time set:\t1" >> output/job.ensi.case
-            echo -e "number of steps:\t\${NSTEPS}" >> output/job.ensi.case
-            echo -e "filename start number:\t0" >> output/job.ensi.case
-            echo -e "filename increment:\t1" >> output/job.ensi.case
-            echo "time values:" >> output/job.ensi.case
-            seq 0 \$(( NSTEPS - 1 )) | xargs printf "%10E " >> output/job.ensi.case
-        fi &&
+        tar xzf '$ensi_tarball' -C output/ 2>/dev/null;
 
-        ## Package everything
-        cd output && tar czf ../ensi_package.tar.gz job.ensi.* &&
-        cd .. && mv ensi_package.tar.gz '$output_ensi' &&
+        if ls output/job.ensi.NDPTL-* 1>/dev/null 2>&1; then printf 'scalar per node:\t\tPotential\tjob.ensi.NDPTL-******\n' >> output/job.ensi.case; fi;
+
+        if ls output/job.ensi.NDTTR-* 1>/dev/null 2>&1; then NSTEPS=\$(ls output/job.ensi.NDTTR-* | wc -l); printf 'scalar per node:\t1\tTemperature\tjob.ensi.NDTTR-******\n' >> output/job.ensi.case; printf 'TIME\ntime set:\t1\nnumber of steps:\t%s\nfilename start number:\t0\nfilename increment:\t1\ntime values:\n' "\${NSTEPS}" >> output/job.ensi.case; seq 0 \$(( NSTEPS - 1 )) | xargs printf '%10E ' >> output/job.ensi.case; fi;
+
+        if ls output/job.ensi.DISPL-* 1>/dev/null 2>&1; then printf 'vector per node:\t\tDisplacement\tjob.ensi.DISPL-******\n' >> output/job.ensi.case; fi;
+
+        cd output && tar czf ../ensi_package.tar.gz job.ensi.* && cd .. &&
+        mv ensi_package.tar.gz '$output_ensi' &&
         cp output/job.ensi.case '$output_case'
     ]]></command>
 
     <inputs>
         <param type="data" name="d_file" label="Mesh geometry (.d)"
                help="ParaFEM .d mesh file" />
-        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)"
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)" optional="true"
                help="ParaFEM .bnd file" />
-        <param type="data" name="fix_file" label="Fixed freedoms (.fix)"
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)" optional="true"
                help="ParaFEM .fix file" />
         <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)"
                help="Tarball of .ensi.NDPTL-* or .ensi.NDTTR-* files from solver" />

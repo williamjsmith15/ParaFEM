@@ -12,9 +12,11 @@
         cp '$d_file' job.d &&
         cp '$bnd_file' job.bnd &&
         cp '$fix_file' job.fix &&
-        mpirun -np \${GALAXY_SLOTS:-1} p123 job 2>&1 &&
-        mv job.res '$output_res' &&
-        tar czf '$output_ensi' job.ensi.*
+        mpirun -np \${GALAXY_SLOTS:-1} p123 job 2>&1;
+        RC=\$?;
+        if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
+        if ls job.ensi.* 1>/dev/null 2>&1; then tar czf '$output_ensi' job.ensi.*; else tar czf '$output_ensi' --files-from /dev/null; fi;
+        exit \${RC}
     ]]></command>
 
     <inputs>

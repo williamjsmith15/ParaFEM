@@ -22,3 +22,4 @@ build_and_push parafem-meshgen     contianers/Dockerfile.meshgen
 build_and_push parafem-p123        contianers/Dockerfile.p123
 build_and_push parafem-bcgen       contianers/Dockerfile.bcgen
 build_and_push parafem-postprocess contianers/Dockerfile.postprocess
+build_and_push parafem-vtu         contianers/Dockerfile.vtu
