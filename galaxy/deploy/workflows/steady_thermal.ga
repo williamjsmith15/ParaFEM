@@ -1,0 +1,143 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Steady-state thermal analysis: box mesh generation, BC assignment, p123 solver, VTU conversion.",
+    "format-version": "0.1",
+    "name": "Steady-State Thermal (ParaFEM p123)",
+    "steps": {
+        "0": {
+            "annotation": "Generate a 5x5x5 hex box mesh (1m cube)",
+            "content_id": "gdps_meshgen_box",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [],
+            "label": "Mesh Generation",
+            "name": "ParaFEM Box Mesh Generator",
+            "outputs": [
+                {"name": "output_d", "type": "txt"},
+                {"name": "output_bnd", "type": "txt"}
+            ],
+            "position": {"left": 20, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_meshgen_box",
+            "tool_state": "{\"nxe\": \"5\", \"nye\": \"5\", \"nze\": \"5\", \"dim_x\": \"1.0\", \"dim_y\": \"1.0\", \"dim_z\": \"1.0\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "7eec78a7-b55b-433b-b1fa-9d3aeedf4af7",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Assign 2-zone thermal BCs along Z axis (800K bottom, 400K top)",
+            "content_id": "gdps_bc_thermal",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "mesh_d": {
+                    "id": 0,
+                    "output_name": "output_d"
+                }
+            },
+            "inputs": [],
+            "label": "BC Generation",
+            "name": "ParaFEM Thermal BC Generator",
+            "outputs": [
+                {"name": "output_dat", "type": "txt"},
+                {"name": "output_bnd", "type": "txt"},
+                {"name": "output_fix", "type": "txt"},
+                {"name": "output_d", "type": "txt"}
+            ],
+            "position": {"left": 300, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_bc_thermal",
+            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": \"50.0\", \"ky\": \"50.0\", \"kz\": \"50.0\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"zone_config\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.4, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.6, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 400.0}]\", \"bc_axis\": \"z\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "6e4e569f-5ff3-45ec-bb2b-a5bcb0e3aa14",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "2": {
+            "annotation": "Run p123 steady-state thermal solver",
+            "content_id": "gdps_steady_thermal",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "dat_file": {
+                    "id": 1,
+                    "output_name": "output_dat"
+                },
+                "d_file": {
+                    "id": 1,
+                    "output_name": "output_d"
+                },
+                "bnd_file": {
+                    "id": 1,
+                    "output_name": "output_bnd"
+                },
+                "fix_file": {
+                    "id": 1,
+                    "output_name": "output_fix"
+                }
+            },
+            "inputs": [],
+            "label": "Thermal Solver",
+            "name": "ParaFEM Steady-State Thermal Solver",
+            "outputs": [
+                {"name": "output_res", "type": "txt"},
+                {"name": "output_ensi", "type": "tar.gz"}
+            ],
+            "position": {"left": 580, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_steady_thermal",
+            "tool_state": "{\"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "766984a1-0904-423e-b99b-45f20119fe55",
+            "when": null,
+            "workflow_outputs": [
+                {"label": "output_res", "output_name": "output_res", "uuid": "3553037c-a455-4611-ab98-b44fcd2cdf00"}
+            ]
+        },
+        "3": {
+            "annotation": "Convert solver output to VTU for ParaView",
+            "content_id": "gdps_parafem2vtu",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "d_file": {
+                    "id": 1,
+                    "output_name": "output_d"
+                },
+                "fix_file": {
+                    "id": 1,
+                    "output_name": "output_fix"
+                },
+                "ensi_tarball": {
+                    "id": 2,
+                    "output_name": "output_ensi"
+                }
+            },
+            "inputs": [],
+            "label": "VTU Conversion",
+            "name": "ParaFEM to VTU Converter",
+            "outputs": [
+                {"name": "output_vtu", "type": "vtkxml"}
+            ],
+            "position": {"left": 860, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_parafem2vtu",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": null, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "91b6b5c4-673b-427b-8133-8942fd6033fc",
+            "when": null,
+            "workflow_outputs": [
+                {"label": "output_vtu", "output_name": "output_vtu", "uuid": "0222613f-dfe8-4037-aa88-204b7d31a7c8"}
+            ]
+        }
+    },
+    "tags": ["parafem", "thermal"],
+    "uuid": "ea2c9356-289b-4bb8-9a89-819ae47b3ec2",
+    "version": 0
+}

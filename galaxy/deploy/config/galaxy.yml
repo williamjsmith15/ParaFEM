@@ -1,0 +1,23 @@
+gravity:
+  gunicorn:
+    bind: 0.0.0.0:8080
+    workers: 2
+    preload: true
+  process_manager: supervisor
+  virtualenv: /galaxy/server/.venv
+  galaxy_root: /galaxy/server
+  galaxy_user: galaxy
+
+galaxy:
+  admin_users:
+    - admin@example.org
+  bootstrap_admin_api_key: 'testing-api-key'
+  id_secret: 'testing-id-secret'
+  log_level: WARNING
+  data_dir: /galaxy/server/database
+  tool_config_file:
+    - /galaxy/server/config/tool_conf.xml
+  job_config_file: /galaxy/server/config/job_conf.xml
+  watch_tools: 'true'
+  cleanup_job: onsuccess
+  allow_path_paste: true

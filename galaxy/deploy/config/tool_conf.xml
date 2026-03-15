@@ -1,0 +1,14 @@
+<toolbox monitor="true">
+    <section id="gdps_preprocessing" name="GDPS Pre-Processing">
+        <tool file="/galaxy/server/parafem/tools/gdps_meshgen_box/gdps_meshgen_box.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_mesh_import/gdps_mesh_import.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_bc_thermal/gdps_bc_thermal.xml" />
+    </section>
+    <section id="gdps_solvers" name="GDPS Solvers">
+        <tool file="/galaxy/server/parafem/tools/gdps_steady_thermal/gdps_steady_thermal.xml" />
+    </section>
+    <section id="gdps_postprocessing" name="GDPS Post-Processing">
+        <tool file="/galaxy/server/parafem/tools/gdps_postprocess/gdps_postprocess.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_parafem2vtu/gdps_parafem2vtu.xml" />
+    </section>
+</toolbox>

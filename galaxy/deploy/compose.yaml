@@ -1,0 +1,51 @@
+services:
+  galaxy:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM galaxy/galaxy-min:24.2.2
+        USER root
+        RUN apt-get update && apt-get install -y --no-install-recommends docker.io curl && rm -rf /var/lib/apt/lists/*
+        USER galaxy
+    container_name: parafem-galaxy
+    ports:
+      - "8180:8080"
+    group_add:
+      - ${DOCKER_GID}
+    volumes:
+      - galaxy-store:/galaxy/server/
+      - ./config/galaxy.yml:/galaxy/server/config/galaxy.yml:ro
+      - ./config/tool_conf.xml:/galaxy/server/config/tool_conf.xml:ro
+      - ./config/job_conf.xml:/galaxy/server/config/job_conf.xml:ro
+      - ../../galaxy:/galaxy/server/parafem/:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/api/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  galaxy-bootstrap:
+    image: galaxy/galaxy-min:24.2.2
+    container_name: parafem-galaxy-bootstrap
+    depends_on:
+      galaxy:
+        condition: service_healthy
+    environment:
+      GALAXY_URL: http://parafem-galaxy:8080
+      GALAXY_API_KEY: testing-api-key
+      GALAXY_ADMIN_EMAIL: admin@example.org
+      GALAXY_ADMIN_USERNAME: admin
+      GALAXY_ADMIN_PASSWORD: admin123
+    volumes:
+      - ./init/bootstrap.py:/bootstrap.py:ro
+      - ./workflows:/galaxy-workflows:ro
+    entrypoint: ["python"]
+    command: ["/bootstrap.py"]
+    networks:
+      default:
+
+volumes:
+  galaxy-store:
+    name: parafem-galaxy-store
