@@ -1,6 +1,6 @@
 {
     "a_galaxy_workflow": "true",
-    "annotation": "Steady-state thermal analysis: box mesh generation, BC assignment, p123 solver, VTU conversion.",
+    "annotation": "Steady-state thermal analysis: box mesh generation, BC assignment, p123 solver, EnSight + VTU output.",
     "format-version": "0.1",
     "name": "Steady-State Thermal (ParaFEM p123)",
     "steps": {
@@ -100,10 +100,53 @@
             ]
         },
         "3": {
+            "annotation": "Package solver output into EnSight Gold format",
+            "content_id": "gdps_postprocess",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "d_file": {
+                    "id": 1,
+                    "output_name": "output_d"
+                },
+                "bnd_file": {
+                    "id": 1,
+                    "output_name": "output_bnd"
+                },
+                "fix_file": {
+                    "id": 1,
+                    "output_name": "output_fix"
+                },
+                "ensi_tarball": {
+                    "id": 2,
+                    "output_name": "output_ensi"
+                }
+            },
+            "inputs": [],
+            "label": "EnSight Packaging",
+            "name": "ParaFEM Post-Processor",
+            "outputs": [
+                {"name": "output_ensi", "type": "tar.gz"},
+                {"name": "output_case", "type": "txt"}
+            ],
+            "position": {"left": 860, "top": 100},
+            "post_job_actions": {},
+            "tool_id": "gdps_postprocess",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "a3c7d891-4e22-4f0a-8b5c-1d9f2e3a4b5c",
+            "when": null,
+            "workflow_outputs": [
+                {"label": "output_ensi", "output_name": "output_ensi", "uuid": "b4d8e902-5f33-4a1b-9c6d-2e0a3f4b5c6d"},
+                {"label": "output_case", "output_name": "output_case", "uuid": "c5e9f013-6a44-4b2c-ad7e-3f1b4a5c6d7e"}
+            ]
+        },
+        "4": {
             "annotation": "Convert solver output to VTU for ParaView",
             "content_id": "gdps_parafem2vtu",
             "errors": null,
-            "id": 3,
+            "id": 4,
             "input_connections": {
                 "d_file": {
                     "id": 1,
@@ -124,7 +167,7 @@
             "outputs": [
                 {"name": "output_vtu", "type": "vtkxml"}
             ],
-            "position": {"left": 860, "top": 200},
+            "position": {"left": 860, "top": 350},
             "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu",
             "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": null, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",

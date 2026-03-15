@@ -8,7 +8,9 @@ Requires:
 Run with: pytest tests/galaxy/ -v --tb=short
 """
 
+import io
 import re
+import tarfile
 import time
 import xml.etree.ElementTree as ET
 
@@ -43,7 +45,7 @@ class TestGalaxySetup:
     def test_workflow_imported(self, gi, workflow_id):
         wf = gi.workflows.show_workflow(workflow_id)
         assert wf["name"] == "Steady-State Thermal (ParaFEM p123)"
-        assert len(wf["steps"]) == 4
+        assert len(wf["steps"]) == 5
 
 
 @pytest.fixture(scope="module")
@@ -109,16 +111,21 @@ def _download_dataset(gi, history_id, name_pattern):
     datasets = gi.histories.show_history(history_id, contents=True)
     for ds in datasets:
         if re.search(name_pattern, ds["name"], re.IGNORECASE):
-            return gi.datasets.download_dataset(ds["id"]).decode("utf-8", errors="replace")
+            return gi.datasets.download_dataset(ds["id"])
     available = [ds["name"] for ds in datasets]
     pytest.fail(f"No dataset matching '{name_pattern}'. Available: {available}")
+
+
+def _download_text(gi, history_id, name_pattern):
+    data = _download_dataset(gi, history_id, name_pattern)
+    return data.decode("utf-8", errors="replace")
 
 
 class TestSteadyThermalWorkflow:
 
     def test_solver_converges(self, workflow_result):
         gi, history_id = workflow_result
-        res = _download_dataset(gi, history_id, r"Results summary.*\.res")
+        res = _download_text(gi, history_id, r"Results summary.*\.res")
         match = re.search(r"iterations to convergence was\s+(\d+)", res)
         assert match, f"No convergence info in .res output:\n{res[:500]}"
         iters = int(match.group(1))
@@ -126,12 +133,14 @@ class TestSteadyThermalWorkflow:
 
     def test_no_nan_in_results(self, workflow_result):
         gi, history_id = workflow_result
-        res = _download_dataset(gi, history_id, r"Results summary.*\.res")
+        res = _download_text(gi, history_id, r"Results summary.*\.res")
         assert "NaN" not in res, "NaN found in solver results"
+
+    # --- VTU output tests ---
 
     def test_vtu_valid(self, workflow_result):
         gi, history_id = workflow_result
-        vtu_bytes = _download_dataset(gi, history_id, r"VTK output.*\.vtu")
+        vtu_bytes = _download_text(gi, history_id, r"VTK output.*\.vtu")
         tree = ET.fromstring(vtu_bytes)
         assert tree.tag == "VTKFile"
         piece = tree.find(".//Piece")
@@ -141,7 +150,7 @@ class TestSteadyThermalWorkflow:
 
     def test_vtu_has_temperature_field(self, workflow_result):
         gi, history_id = workflow_result
-        vtu_bytes = _download_dataset(gi, history_id, r"VTK output.*\.vtu")
+        vtu_bytes = _download_text(gi, history_id, r"VTK output.*\.vtu")
         tree = ET.fromstring(vtu_bytes)
         potential = tree.find('.//PointData/DataArray[@Name="Potential"]')
         assert potential is not None, "No Potential field in VTU"
@@ -151,9 +160,54 @@ class TestSteadyThermalWorkflow:
 
     def test_vtu_temperature_range(self, workflow_result):
         gi, history_id = workflow_result
-        vtu_bytes = _download_dataset(gi, history_id, r"VTK output.*\.vtu")
+        vtu_bytes = _download_text(gi, history_id, r"VTK output.*\.vtu")
         tree = ET.fromstring(vtu_bytes)
         potential = tree.find('.//PointData/DataArray[@Name="Potential"]')
         vals = [float(x) for x in potential.text.strip().split()]
         assert all(300 <= v <= 900 for v in vals), \
             f"Temperatures outside expected range: min={min(vals):.1f}, max={max(vals):.1f}"
+
+    # --- EnSight output tests ---
+
+    def test_ensi_case_file_valid(self, workflow_result):
+        gi, history_id = workflow_result
+        case_text = _download_text(gi, history_id, r"EnSight case file.*\.case")
+        assert "FORMAT" in case_text, "Missing FORMAT section in .case file"
+        assert "GEOMETRY" in case_text, "Missing GEOMETRY section in .case file"
+        assert "job.ensi.geo" in case_text, "Missing geometry reference in .case"
+
+    def test_ensi_case_has_variable(self, workflow_result):
+        gi, history_id = workflow_result
+        case_text = _download_text(gi, history_id, r"EnSight case file.*\.case")
+        assert "VARIABLE" in case_text, "Missing VARIABLE section in .case file"
+        assert "Potential" in case_text, \
+            f"No Potential variable in .case file:\n{case_text}"
+
+    def test_ensi_tarball_contents(self, workflow_result):
+        gi, history_id = workflow_result
+        raw = _download_dataset(gi, history_id, r"EnSight Gold package.*\.tar\.gz")
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        names = tf.getnames()
+        tf.close()
+
+        assert any("ensi.case" in n for n in names), \
+            f"No .ensi.case in tarball. Contents: {names}"
+        assert any("ensi.geo" in n for n in names), \
+            f"No .ensi.geo in tarball. Contents: {names}"
+        assert any("NDPTL" in n for n in names), \
+            f"No NDPTL variable file in tarball. Contents: {names}"
+
+    def test_ensi_geo_has_nodes(self, workflow_result):
+        gi, history_id = workflow_result
+        raw = _download_dataset(gi, history_id, r"EnSight Gold package.*\.tar\.gz")
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        geo_member = None
+        for m in tf.getmembers():
+            if "ensi.geo" in m.name:
+                geo_member = m
+                break
+        assert geo_member is not None, "No .ensi.geo in tarball"
+        geo_text = tf.extractfile(geo_member).read().decode("utf-8", errors="replace")
+        tf.close()
+        assert "coordinates" in geo_text.lower(), \
+            f"No coordinates section in .ensi.geo"
