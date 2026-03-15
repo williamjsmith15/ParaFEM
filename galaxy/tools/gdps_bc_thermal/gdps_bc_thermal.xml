@@ -35,7 +35,11 @@
                help="Maximum PCG solver iterations" />
         <param type="text" name="zone_config" label="Zone configuration (JSON)"
                value='[{"axis_min": 0.0, "axis_max": 0.3, "temperature": 800.0}, {"axis_min": 0.3, "axis_max": 0.7, "temperature": 1000.0}, {"axis_min": 0.7, "axis_max": 1.0, "temperature": 800.0}]'
-               help="JSON array of heater zones. Each zone: axis_min, axis_max (normalized 0.0-1.0 along axis), temperature (K). 0.0 = mesh start, 1.0 = mesh end." />
+               help="JSON array of heater zones. Each zone: axis_min, axis_max (normalized 0.0-1.0 along axis), temperature (K). 0.0 = mesh start, 1.0 = mesh end.">
+            <sanitizer>
+                <valid initial="string.printable"/>
+            </sanitizer>
+        </param>
         <param type="select" name="bc_axis" label="Zone axis">
             <option value="x">X axis</option>
             <option value="y">Y axis</option>

@@ -43,3 +43,6 @@ __pycache__/
 # Testing temp files
 testing_tempfiles/
 
+# Generated Galaxy config
+galaxy/deploy/config/job_conf.xml
+

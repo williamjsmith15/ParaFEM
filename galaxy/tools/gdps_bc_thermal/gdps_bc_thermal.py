@@ -8,6 +8,7 @@ Dirichlet (fixed temperature) BCs to nodes within user-defined heater zones.
 
 import argparse
 import json
+import re
 import shutil
 import numpy as np
 from collections import defaultdict
@@ -222,8 +223,12 @@ def main():
     args = parser.parse_args()
 
     # Parse zone config (JSON string or file)
+    # Galaxy's shell quoting can strip quotes from JSON keys, leaving
+    # {axis_min: 0.0} instead of {"axis_min": 0.0}. Fix with regex.
+    zone_str = args.zone_config.replace("'", '"')
+    zone_str = re.sub(r'(\b\w+\b)(\s*:)', r'"\1"\2', zone_str)
     try:
-        zones = json.loads(args.zone_config)
+        zones = json.loads(zone_str)
     except json.JSONDecodeError:
         with open(args.zone_config, 'r') as f:
             zones = json.load(f)

@@ -11,13 +11,7 @@
         AA=\$(awk "BEGIN {printf \"%.8f\", $dim_x / $nxe}") &&
         BB=\$(awk "BEGIN {printf \"%.8f\", $dim_y / $nye}") &&
         CC=\$(awk "BEGIN {printf \"%.8f\", $dim_z / $nze}") &&
-        cat > job.mg << MGEOF
-'p123'
-'parafem' \${NELS} $nxe $nze 8
-\${AA} \${BB} \${CC} 1.0 1.0 1.0
-1.0e-6 2000
-0 0
-MGEOF
+        printf "'p123'\n'parafem' %s $nxe $nze 8\n%s %s %s 1.0 1.0 1.0\n1.0e-6 2000\n0 0\n" "\${NELS}" "\${AA}" "\${BB}" "\${CC}" > job.mg &&
         p12meshgen job &&
         mv job.d '$output_d' &&
         mv job.bnd '$output_bnd'

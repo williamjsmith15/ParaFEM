@@ -37,12 +37,7 @@
             --output result.vtu
             2>&1 &&
 
-        ## Handle single .vtu or .pvd + multiple .vtu for time-varying
-        if [ -f result.pvd ]; then
-            tar czf '$output_vtu' result.pvd result_*.vtu
-        else
-            cp result.vtu '$output_vtu'
-        fi
+        if [ -f result.pvd ]; then tar czf '$output_vtu' result.pvd result_*.vtu; else cp result.vtu '$output_vtu'; fi
     ]]></command>
 
     <inputs>
