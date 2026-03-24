@@ -15,7 +15,17 @@ envsubst '${REPO_ROOT}' < "$SCRIPT_DIR/config/job_conf.xml.tmpl" > "$SCRIPT_DIR/
 echo "Generated config/job_conf.xml"
 
 cd "$SCRIPT_DIR"
-docker compose up -d --build
+
+COMPOSE_PROFILES=""
+if [ -f ".secret_token" ]; then
+    echo "Found .secret_token — starting with Cloudflare tunnel"
+    COMPOSE_PROFILES="--profile tunnel"
+else
+    echo "No .secret_token found — skipping Cloudflare tunnel (local access only)"
+    echo "  To enable: create galaxy/deploy/.secret_token with TUNNEL_TOKEN=<token>"
+fi
+
+docker compose $COMPOSE_PROFILES up -d --build
 
 echo ""
 echo "Waiting for Galaxy to become healthy..."
@@ -34,6 +44,9 @@ until docker inspect --format='{{.State.Health.Status}}' parafem-galaxy 2>/dev/n
 done
 echo ""
 echo "Galaxy is ready at http://localhost:8180"
+if [ -f ".secret_token" ]; then
+    echo "Cloudflare tunnel active — check your Cloudflare dashboard for the public URL"
+fi
 echo "Admin: admin@example.org / admin123"
 echo ""
 echo "Bootstrap is running in the background..."

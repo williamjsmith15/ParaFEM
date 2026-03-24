@@ -46,3 +46,6 @@ testing_tempfiles/
 # Generated Galaxy config
 galaxy/deploy/config/job_conf.xml
 
+# Cloudflare tunnel credentials
+galaxy/deploy/.secret_token
+

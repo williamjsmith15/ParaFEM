@@ -17,6 +17,7 @@ services:
       - ./config/galaxy.yml:/galaxy/server/config/galaxy.yml:ro
       - ./config/tool_conf.xml:/galaxy/server/config/tool_conf.xml:ro
       - ./config/job_conf.xml:/galaxy/server/config/job_conf.xml:ro
+      - ./config/datatypes_conf.xml:/galaxy/server/config/datatypes_conf.xml:ro
       - ../../galaxy:/galaxy/server/parafem/:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
@@ -25,6 +26,18 @@ services:
       timeout: 5s
       retries: 30
       start_period: 60s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: parafem-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file: .secret_token
+    depends_on:
+      galaxy:
+        condition: service_healthy
+    profiles:
+      - tunnel
 
   galaxy-bootstrap:
     image: galaxy/galaxy-min:24.2.2
