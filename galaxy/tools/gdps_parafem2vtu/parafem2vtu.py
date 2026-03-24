@@ -139,8 +139,8 @@ def parse_bnd_file(filepath, nn):
 
 
 def parse_fix_file(filepath, nn):
-    """Parse .fix file. Returns per-node value array (0 where not fixed)."""
-    values = [0.0] * nn
+    """Parse .fix file. Returns per-node value array (NaN where not fixed)."""
+    values = [float('nan')] * nn
     if not os.path.exists(filepath):
         return values
     with open(filepath, 'r') as f:
@@ -331,9 +331,9 @@ def main():
     # Fixed freedom values
     if args.fix:
         fix_vals = parse_fix_file(args.fix, nn)
-        if any(v != 0.0 for v in fix_vals):
+        if any(v == v for v in fix_vals):  # at least one non-NaN
             point_data['FixedFreedoms'] = fix_vals
-            print(f"  Fixed freedoms: {sum(1 for v in fix_vals if v != 0.0)}")
+            print(f"  Fixed freedoms: {sum(1 for v in fix_vals if v == v)}")
 
     # Material IDs (from element data)
     mat_ids = [elements[eid]['mat_id'] for eid in sorted_elem_ids]
