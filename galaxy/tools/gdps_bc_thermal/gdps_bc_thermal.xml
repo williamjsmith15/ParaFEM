@@ -14,10 +14,10 @@
             --limit $limit
             --zone_config '$zone_config'
             --bc_axis '$bc_axis'
-            --output_dat '$output_dat'
+            --output_d '$output_d'
             --output_bnd '$output_bnd'
             --output_fix '$output_fix'
-            --output_d '$output_d'
+            --output_dat '$output_dat'
     ]]></command>
 
     <inputs>
@@ -48,10 +48,10 @@
     </inputs>
 
     <outputs>
-        <data format="txt" name="output_dat" label="Control data (.dat)" />
+        <data format="txt" name="output_d" label="Mesh geometry (.d) [pass-through]" />
         <data format="txt" name="output_bnd" label="Boundary restraints (.bnd)" />
         <data format="txt" name="output_fix" label="Fixed freedoms (.fix)" />
-        <data format="txt" name="output_d" label="Mesh geometry (.d) [pass-through]" />
+        <data format="txt" name="output_dat" label="Control data (.dat)" />
     </outputs>
 
     <help>

@@ -8,10 +8,10 @@
 
     <command><![CDATA[
         mkdir -p run && cd run &&
-        cp '$dat_file' job.dat &&
         cp '$d_file' job.d &&
         cp '$bnd_file' job.bnd &&
         cp '$fix_file' job.fix &&
+        cp '$dat_file' job.dat &&
         mpirun -np \${GALAXY_SLOTS:-1} p123 job 2>&1;
         RC=\$?;
         if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
@@ -20,14 +20,14 @@
     ]]></command>
 
     <inputs>
-        <param type="data" name="dat_file" label="Control data (.dat)"
-               help="Solver control parameters from BC generator" />
         <param type="data" name="d_file" label="Mesh geometry (.d)"
                help="Mesh file with nodal coordinates and element connectivity" />
         <param type="data" name="bnd_file" label="Boundary restraints (.bnd)"
                help="Restrained nodes from BC generator" />
         <param type="data" name="fix_file" label="Fixed freedoms (.fix)"
                help="Prescribed temperature values from BC generator" />
+        <param type="data" name="dat_file" label="Control data (.dat)"
+               help="Solver control parameters from BC generator" />
     </inputs>
 
     <outputs>
