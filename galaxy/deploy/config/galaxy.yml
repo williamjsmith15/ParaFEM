@@ -18,6 +18,7 @@ galaxy:
   tool_config_file:
     - /galaxy/server/config/tool_conf.xml
   job_config_file: /galaxy/server/config/job_conf.xml
+  datatypes_config_file: /galaxy/server/config/datatypes_conf.xml
   watch_tools: 'true'
   cleanup_job: onsuccess
   allow_path_paste: true

@@ -52,7 +52,7 @@
     </inputs>
 
     <outputs>
-        <data format="vtkxml" name="output_vtu" label="VTK output (.vtu)"
+        <data format="vtu" name="output_vtu" label="VTK output (.vtu)"
               help="VTK Unstructured Grid file for ParaView. For time-varying data, a .tar.gz containing .pvd + per-timestep .vtu files." />
     </outputs>
 
