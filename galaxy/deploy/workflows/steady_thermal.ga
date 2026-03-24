@@ -28,7 +28,7 @@
             "workflow_outputs": []
         },
         "1": {
-            "annotation": "Assign 2-zone thermal BCs along Z axis (800K bottom, 400K top)",
+            "annotation": "Assign 2-zone thermal BCs along Z axis (800K bottom face, 400K top face)",
             "content_id": "gdps_bc_thermal",
             "errors": null,
             "id": 1,
@@ -42,15 +42,15 @@
             "label": "BC Generation",
             "name": "ParaFEM Thermal BC Generator",
             "outputs": [
-                {"name": "output_dat", "type": "txt"},
+                {"name": "output_d", "type": "txt"},
                 {"name": "output_bnd", "type": "txt"},
                 {"name": "output_fix", "type": "txt"},
-                {"name": "output_d", "type": "txt"}
+                {"name": "output_dat", "type": "txt"}
             ],
             "position": {"left": 300, "top": 200},
             "post_job_actions": {},
             "tool_id": "gdps_bc_thermal",
-            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": \"50.0\", \"ky\": \"50.0\", \"kz\": \"50.0\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"zone_config\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.4, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.6, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 400.0}]\", \"bc_axis\": \"z\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": \"50.0\", \"ky\": \"50.0\", \"kz\": \"50.0\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"zone_config\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 400.0}]\", \"bc_axis\": \"z\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "6e4e569f-5ff3-45ec-bb2b-a5bcb0e3aa14",
