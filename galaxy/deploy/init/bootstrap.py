@@ -35,11 +35,12 @@ def import_workflows(gi, workflow_dir):
             name = json.load(f)["name"]
 
         if name in existing_names:
-            print(f"Workflow already imported: {name}")
-            wf = gi.workflows.get_workflows(name=name)[0]
-        else:
-            wf = gi.workflows.import_workflow_from_local_path(path)
-            print(f"Imported workflow: {name}")
+            old_wf = gi.workflows.get_workflows(name=name)[0]
+            gi.workflows.delete_workflow(old_wf["id"])
+            print(f"Deleted outdated workflow: {name}")
+
+        wf = gi.workflows.import_workflow_from_local_path(path)
+        print(f"Imported workflow: {name}")
 
         gi.workflows.update_workflow(wf["id"], published=True, menu_entry=True)
         print(f"Published workflow: {name}")

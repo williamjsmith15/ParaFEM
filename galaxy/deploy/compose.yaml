@@ -11,7 +11,7 @@ services:
     ports:
       - "8180:8080"
     group_add:
-      - ${DOCKER_GID}
+      - "998"
     volumes:
       - galaxy-store:/galaxy/server/
       - ./config/galaxy.yml:/galaxy/server/config/galaxy.yml:ro
