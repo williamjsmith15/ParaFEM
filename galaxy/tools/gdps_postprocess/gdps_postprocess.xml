@@ -3,7 +3,7 @@
     <description>Package ParaFEM solver output into EnSight Gold format for ParaView</description>
 
     <requirements>
-        <container type="docker">williamjsmith15/parafem-postprocess:latest</container>
+        <container type="docker">williamjsmith15/parafem:latest</container>
     </requirements>
 
     <command><![CDATA[

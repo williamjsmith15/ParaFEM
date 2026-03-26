@@ -3,7 +3,7 @@
     <description>Convert Abaqus .inp mesh to ParaFEM format using inp2pf</description>
 
     <requirements>
-        <container type="docker">williamjsmith15/parafem-meshgen:latest</container>
+        <container type="docker">williamjsmith15/parafem:latest</container>
     </requirements>
 
     <command><![CDATA[

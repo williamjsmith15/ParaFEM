@@ -3,7 +3,7 @@
     <description>Generate a structured hexahedral box mesh using p12meshgen</description>
 
     <requirements>
-        <container type="docker">williamjsmith15/parafem-meshgen:latest</container>
+        <container type="docker">williamjsmith15/parafem:latest</container>
     </requirements>
 
     <command><![CDATA[
@@ -18,17 +18,17 @@
     ]]></command>
 
     <inputs>
-        <param type="integer" name="nxe" label="Elements in X" value="10"
+        <param type="integer" name="nxe" label="Elements in X" value="10" min="1"
                help="Number of elements along the X axis (length)" />
-        <param type="integer" name="nye" label="Elements in Y" value="10"
+        <param type="integer" name="nye" label="Elements in Y" value="10" min="1"
                help="Number of elements along the Y axis (width)" />
-        <param type="integer" name="nze" label="Elements in Z" value="10"
+        <param type="integer" name="nze" label="Elements in Z" value="10" min="1"
                help="Number of elements along the Z axis (height)" />
-        <param type="float" name="dim_x" label="X dimension (m)" value="1.0"
+        <param type="float" name="dim_x" label="X dimension (m)" value="1.0" min="0.001"
                help="Total mesh dimension in X direction (metres)" />
-        <param type="float" name="dim_y" label="Y dimension (m)" value="1.0"
+        <param type="float" name="dim_y" label="Y dimension (m)" value="1.0" min="0.001"
                help="Total mesh dimension in Y direction (metres)" />
-        <param type="float" name="dim_z" label="Z dimension (m)" value="1.0"
+        <param type="float" name="dim_z" label="Z dimension (m)" value="1.0" min="0.001"
                help="Total mesh dimension in Z direction (metres)" />
     </inputs>
 

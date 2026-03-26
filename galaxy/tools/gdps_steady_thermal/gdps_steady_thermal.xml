@@ -3,7 +3,7 @@
     <description>Solve 3D steady-state heat conduction using ParaFEM p123 (PCG solver)</description>
 
     <requirements>
-        <container type="docker">williamjsmith15/parafem-p123:latest</container>
+        <container type="docker">williamjsmith15/parafem:latest</container>
     </requirements>
 
     <command><![CDATA[
