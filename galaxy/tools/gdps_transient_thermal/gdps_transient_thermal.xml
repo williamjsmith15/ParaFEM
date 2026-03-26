@@ -1,0 +1,61 @@
+<tool id="gdps_transient_thermal" name="ParaFEM Transient Thermal Solver" version="0.1.0">
+
+    <description>Solve 3D transient heat conduction using ParaFEM p124 (implicit theta + PCG solver)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file' job.d &&
+        cp '$bnd_file' job.bnd &&
+        cp '$fix_file' job.fix &&
+        cp '$dat_file' job.dat &&
+        cp '$mat_file' job.mat &&
+        mpirun -np \${GALAXY_SLOTS:-1} p124 job 2>&1;
+        RC=\$?;
+        if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
+        if ls job.ensi.* 1>/dev/null 2>&1; then tar czf '$output_ensi' job.ensi.*; else tar czf '$output_ensi' --files-from /dev/null; fi;
+        exit \${RC}
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" label="Mesh geometry (.d)"
+               help="Mesh file with nodal coordinates and element connectivity" />
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)"
+               help="Restrained nodes from BC generator" />
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)"
+               help="Prescribed temperature values from BC generator" />
+        <param type="data" name="dat_file" label="Control data (.dat)"
+               help="Solver control parameters from BC generator" />
+        <param type="data" name="mat_file" label="Material properties (.mat)"
+               help="Material thermal properties (kx, ky, kz, rho, cp) from BC generator" />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_res" label="Results summary (.res)" />
+        <data format="tar.gz" name="output_ensi" label="EnSight output (.ensi.tar.gz)" />
+    </outputs>
+
+    <help>
+Solves 3D transient heat conduction using ParaFEM program p124.
+
+Solver: Implicit theta time integration with Preconditioned Conjugate Gradient (PCG)
+for the spatial solve at each time step. Uses 8-node hexahedral elements.
+
+Time integration schemes (set via theta in the .dat file):
+- theta=0.5: Crank-Nicolson (second-order accurate)
+- theta=1.0: Fully implicit/backward Euler (unconditionally stable)
+
+Boundary conditions: Dirichlet (fixed temperature) via the penalty method.
+Material properties (conductivity, density, specific heat) are read from the .mat file.
+
+Outputs:
+- .res: text summary with time, temperature at monitor node, and PCG iterations per step
+- .ensi.tar.gz: EnSight Gold scalar fields (NDTTR-NNNNNN) for each output timestep
+
+Pass the .ensi.tar.gz to the ParaFEM to VTU Converter for ParaView visualization.
+The number of MPI processes is controlled by GALAXY_SLOTS.
+    </help>
+</tool>

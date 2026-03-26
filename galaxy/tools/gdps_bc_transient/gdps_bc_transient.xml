@@ -1,0 +1,105 @@
+<tool id="gdps_bc_transient" name="ParaFEM Transient Thermal BC Generator" version="0.1.0">
+
+    <description>Generate boundary condition, material, and control files for transient thermal analysis (p124)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-bcgen:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python3 '$__tool_directory__/gdps_bc_transient.py'
+            --mesh_d '$mesh_d'
+            --kx $kx --ky $ky --kz $kz
+            --rho $rho --cp $cp
+            --val0 $val0
+            --dtim $dtim
+            --nstep $nstep
+            --npri $npri
+            --theta $theta
+            --tol $tol
+            --limit $limit
+            --zone_config '$zone_file'
+            --bc_axis '$bc_axis'
+            --output_d '$output_d'
+            --output_bnd '$output_bnd'
+            --output_fix '$output_fix'
+            --output_dat '$output_dat'
+            --output_mat '$output_mat'
+    ]]></command>
+
+    <configfiles>
+        <configfile name="zone_file">${zone_config}</configfile>
+    </configfiles>
+
+    <inputs>
+        <param type="data" name="mesh_d" label="Mesh geometry (.d)"
+               help="ParaFEM .d file from mesh generator or mesh import tool" />
+        <param type="float" name="kx" label="Conductivity kx (W/m.K)" value="50.0"
+               help="Thermal conductivity in X direction" />
+        <param type="float" name="ky" label="Conductivity ky (W/m.K)" value="50.0"
+               help="Thermal conductivity in Y direction" />
+        <param type="float" name="kz" label="Conductivity kz (W/m.K)" value="50.0"
+               help="Thermal conductivity in Z direction" />
+        <param type="float" name="rho" label="Density rho (kg/m³)" value="7800.0"
+               help="Material density" />
+        <param type="float" name="cp" label="Specific heat cp (J/kg.K)" value="500.0"
+               help="Specific heat capacity" />
+        <param type="float" name="val0" label="Initial temperature (K)" value="293.0"
+               help="Uniform initial temperature of the whole model" />
+        <param type="float" name="dtim" label="Time step (s)" value="1.0"
+               help="Duration of each time step" />
+        <param type="integer" name="nstep" label="Number of time steps" value="100"
+               help="Total number of time steps to simulate" />
+        <param type="integer" name="npri" label="Output every N steps" value="10"
+               help="Write results every N time steps (1 = every step)" />
+        <param type="float" name="theta" label="Theta parameter" value="0.5"
+               help="Time integration parameter: 0.5 = Crank-Nicolson, 1.0 = fully implicit" />
+        <param type="float" name="tol" label="Solver tolerance" value="1.0e-6"
+               help="PCG convergence tolerance" />
+        <param type="integer" name="limit" label="Max iterations" value="2000"
+               help="Maximum PCG solver iterations per time step" />
+        <param type="text" name="zone_config" label="Zone configuration (JSON)"
+               value='[{"axis_min": 0.0, "axis_max": 0.1, "temperature": 500.0}, {"axis_min": 0.9, "axis_max": 1.0, "temperature": 293.0}]'
+               help="JSON array of temperature zones. Each zone: axis_min, axis_max (normalized 0.0-1.0 along axis), temperature (K).">
+            <sanitizer>
+                <valid initial="string.printable"/>
+            </sanitizer>
+        </param>
+        <param type="select" name="bc_axis" label="Zone axis">
+            <option value="x">X axis</option>
+            <option value="y">Y axis</option>
+            <option value="z" selected="true">Z axis</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_d" label="Mesh geometry (.d) [pass-through]" />
+        <data format="txt" name="output_bnd" label="Boundary restraints (.bnd)" />
+        <data format="txt" name="output_fix" label="Fixed freedoms (.fix)" />
+        <data format="txt" name="output_dat" label="Control data (.dat)" />
+        <data format="txt" name="output_mat" label="Material properties (.mat)" />
+    </outputs>
+
+    <help>
+Generates ParaFEM boundary condition and material files for transient thermal analysis (p124).
+
+Reads the mesh .d file, identifies boundary nodes, and assigns fixed temperatures
+to nodes falling within user-defined heater zones along the specified axis.
+Also writes a .mat file with material thermal properties (kx, ky, kz, rho, cp).
+
+Zone configuration is a JSON array where each zone specifies:
+- axis_min, axis_max: normalized position (0.0 = mesh start, 1.0 = mesh end)
+- temperature: prescribed temperature in Kelvin
+
+Time integration uses the theta method:
+- theta=0.5: Crank-Nicolson (second-order accurate, may oscillate)
+- theta=1.0: Fully implicit (first-order, unconditionally stable)
+
+Output files:
+- .dat: p124 solver control parameters
+- .bnd: restrained nodes (empty — nr=0, all BCs via penalty method)
+- .fix: fixed freedom values (node, sense=1, temperature)
+- .mat: material properties (kx, ky, kz, rho, cp)
+- .d: pass-through of the input mesh file
+    </help>
+</tool>
