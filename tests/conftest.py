@@ -37,3 +37,18 @@ def small_ensi_ndptl():
 @pytest.fixture
 def small_res():
     return os.path.join(FIXTURES_DIR, 'small_2x2x2.res')
+
+
+@pytest.fixture
+def small_transient_dat():
+    return os.path.join(FIXTURES_DIR, 'small_2x2x2_transient.dat')
+
+
+@pytest.fixture
+def small_transient_mat():
+    return os.path.join(FIXTURES_DIR, 'small_2x2x2_transient.mat')
+
+
+@pytest.fixture
+def small_transient_long_dat():
+    return os.path.join(FIXTURES_DIR, 'small_2x2x2_transient_long.dat')

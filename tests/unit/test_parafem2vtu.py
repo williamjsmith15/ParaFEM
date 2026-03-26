@@ -11,10 +11,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'galaxy',
 from parafem2vtu import (
     parse_d_file,
     parse_ensi_scalar,
+    parse_ensi_vector,
     parse_bnd_file,
     parse_fix_file,
     build_vtu_tree,
     write_vtu,
+    write_pvd,
+    find_ensi_files,
     VTK_CELL_TYPES,
 )
 
@@ -76,14 +79,17 @@ class TestParseBndFile:
 class TestParseFixFile:
 
     def test_parses_fix(self, small_fix):
+        import math
         values = parse_fix_file(small_fix, 27)
         assert len(values) == 27
-        non_zero = sum(1 for v in values if v != 0.0)
-        assert non_zero == 18
+        fixed = sum(1 for v in values if not math.isnan(v))
+        assert fixed == 18
 
-    def test_missing_file_returns_zeros(self):
+    def test_missing_file_returns_nan(self):
+        import math
         values = parse_fix_file('/nonexistent/path.fix', 10)
-        assert values == [0.0] * 10
+        assert len(values) == 10
+        assert all(math.isnan(v) for v in values)
 
 
 class TestBuildVtuTree:
@@ -139,6 +145,129 @@ class TestBuildVtuTree:
         assert cd is not None
         values = [int(x) for x in cd.text.strip().split()]
         assert len(values) == 8
+
+
+class TestParseEnsiVector:
+
+    def test_parses_planar_layout(self):
+        # 3 nodes, vector data stored as: x0 x1 x2 y0 y1 y2 z0 z1 z2
+        content = (
+            "header line 1\n"
+            "header line 2\n"
+            "header line 3\n"
+            "header line 4\n"
+            "1.0\n2.0\n3.0\n"
+            "4.0\n5.0\n6.0\n"
+            "7.0\n8.0\n9.0\n"
+        )
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.ensi', delete=False) as f:
+            f.write(content)
+            path = f.name
+        try:
+            result = parse_ensi_vector(path, nn=3)
+            assert len(result) == 3
+            assert result[0] == [1.0, 4.0, 7.0]
+            assert result[1] == [2.0, 5.0, 8.0]
+            assert result[2] == [3.0, 6.0, 9.0]
+        finally:
+            os.unlink(path)
+
+    def test_returns_list_of_xyz(self):
+        content = (
+            "h1\nh2\nh3\nh4\n"
+            "10.0\n20.0\n"
+            "30.0\n40.0\n"
+            "50.0\n60.0\n"
+        )
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.ensi', delete=False) as f:
+            f.write(content)
+            path = f.name
+        try:
+            result = parse_ensi_vector(path, nn=2)
+            assert len(result) == 2
+            for vec in result:
+                assert len(vec) == 3
+        finally:
+            os.unlink(path)
+
+
+class TestWritePvd:
+
+    def test_writes_valid_pvd(self):
+        entries = [(0.0, '/tmp/step_000000.vtu'), (500.0, '/tmp/step_000001.vtu')]
+        with tempfile.NamedTemporaryFile(suffix='.pvd', delete=False) as f:
+            pvd_path = f.name
+        try:
+            write_pvd(entries, pvd_path)
+            tree = ET.parse(pvd_path)
+            root = tree.getroot()
+            assert root.tag == 'VTKFile'
+            assert root.attrib['type'] == 'Collection'
+            datasets = root.findall('.//DataSet')
+            assert len(datasets) == 2
+        finally:
+            os.unlink(pvd_path)
+
+    def test_timestep_attributes(self):
+        entries = [(0.0, '/tmp/step_000000.vtu'), (500.0, '/tmp/step_000001.vtu')]
+        with tempfile.NamedTemporaryFile(suffix='.pvd', delete=False) as f:
+            pvd_path = f.name
+        try:
+            write_pvd(entries, pvd_path)
+            tree = ET.parse(pvd_path)
+            datasets = tree.findall('.//DataSet')
+            assert datasets[0].attrib['timestep'] == '0.0'
+            assert datasets[1].attrib['timestep'] == '500.0'
+            assert datasets[0].attrib['file'] == 'step_000000.vtu'
+            assert datasets[1].attrib['file'] == 'step_000001.vtu'
+        finally:
+            os.unlink(pvd_path)
+
+
+class TestFindEnsiFiles:
+
+    def test_finds_grouped_by_type(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for name in ['job.ensi.NDTTR-000001', 'job.ensi.NDTTR-000002',
+                         'job.ensi.NDPTL-000001']:
+                open(os.path.join(tmpdir, name), 'w').close()
+            result = find_ensi_files(tmpdir, 'job')
+            assert 'NDTTR' in result
+            assert 'NDPTL' in result
+            assert len(result['NDTTR']) == 2
+            assert len(result['NDPTL']) == 1
+
+    def test_sorted_by_step(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for name in ['job.ensi.NDTTR-000003', 'job.ensi.NDTTR-000001',
+                         'job.ensi.NDTTR-000002']:
+                open(os.path.join(tmpdir, name), 'w').close()
+            result = find_ensi_files(tmpdir, 'job')
+            steps = [s for s, _ in result['NDTTR']]
+            assert steps == [1, 2, 3]
+
+
+class TestBuildVtuTreeVector:
+
+    def test_vector_point_data_has_3_components(self, small_mesh_d):
+        nodes, elements, nod = parse_d_file(small_mesh_d)
+        nn = len(nodes)
+        vectors = [[float(i), float(i + 1), float(i + 2)] for i in range(nn)]
+        point_data = {'Displacement': vectors}
+        root = build_vtu_tree(nodes, elements, nod, point_data=point_data)
+        da = root.find('.//PointData/DataArray[@Name="Displacement"]')
+        assert da is not None
+        assert da.attrib['NumberOfComponents'] == '3'
+
+    def test_vector_values_roundtrip(self, small_mesh_d):
+        nodes, elements, nod = parse_d_file(small_mesh_d)
+        nn = len(nodes)
+        vectors = [[1.0, 2.0, 3.0]] * nn
+        point_data = {'Displacement': vectors}
+        root = build_vtu_tree(nodes, elements, nod, point_data=point_data)
+        da = root.find('.//PointData/DataArray[@Name="Displacement"]')
+        lines = [l.strip() for l in da.text.strip().split('\n') if l.strip()]
+        assert len(lines) == nn
 
 
 class TestWriteVtu:
