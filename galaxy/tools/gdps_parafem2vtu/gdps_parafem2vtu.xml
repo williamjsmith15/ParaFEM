@@ -1,6 +1,6 @@
-<tool id="gdps_parafem2vtu" name="ParaFEM to VTU Converter" version="0.1.0">
+<tool id="gdps_parafem2vtu" name="ParaFEM to VTU (Steady State)" version="0.2.0">
 
-    <description>Convert ParaFEM output to VTK Unstructured Grid (.vtu) for ParaView</description>
+    <description>Convert steady-state ParaFEM output to VTK Unstructured Grid (.vtu) for ParaView</description>
 
     <requirements>
         <container type="docker">williamjsmith15/parafem-vtu:latest</container>
@@ -37,7 +37,7 @@
             --output result.vtu
             2>&1 &&
 
-        if [ -f result.pvd ]; then tar czf '$output_vtu' result.pvd result_*.vtu; else cp result.vtu '$output_vtu'; fi
+        cp result.vtu '$output_vtu'
     ]]></command>
 
     <inputs>
@@ -48,31 +48,23 @@
         <param type="data" name="fix_file" label="Fixed freedoms (.fix)" optional="true"
                help="ParaFEM .fix file — adds FixedFreedoms field to output" />
         <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)" optional="true"
-               help="Tarball of .ensi.NDPTL-*, .ensi.NDTTR-*, .ensi.DISPL-* files from solver" />
+               help="Tarball of .ensi.NDPTL-* or .ensi.DISPL-* files from solver" />
     </inputs>
 
     <outputs>
-        <data format="vtu" name="output_vtu" label="VTK output (.vtu)"
-              help="VTK Unstructured Grid file for ParaView. For time-varying data, a .tar.gz containing .pvd + per-timestep .vtu files." />
+        <data format="vtu" name="output_vtu" label="VTK output (.vtu)" />
     </outputs>
 
     <help>
-Converts ParaFEM mesh and solver output into VTK Unstructured Grid (.vtu) format
-for direct visualization in ParaView.
+Converts steady-state ParaFEM mesh and solver output into a single VTK Unstructured
+Grid (.vtu) file for direct visualization in ParaView.
 
-Produces a single .vtu file containing:
-- Mesh geometry (nodes and elements)
-- BoundaryNodes field (from .bnd, if provided)
-- FixedFreedoms field (from .fix, if provided)
-- MaterialID field (if multiple materials)
-- Solver output fields (from EnSight tarball, if provided):
-  - Potential (NDPTL, from p123 steady-state)
-  - Temperature (NDTTR, from p124 transient)
-  - Displacement (DISPL, from p121/p122/p129)
-  - Eigenvector (EIGV, from p128)
-
-For time-varying results (multiple timesteps), outputs a .tar.gz containing
-a .pvd collection file plus per-timestep .vtu files.
+Output fields:
+- BoundaryNodes (from .bnd, if provided)
+- FixedFreedoms (from .fix, if provided)
+- MaterialID (if multiple materials)
+- Potential (NDPTL, from p123)
+- Displacement (DISPL, from p121/p122)
 
 Supported element types: 8-node hex, 20-node hex, 4-node tet, 10-node tet.
 

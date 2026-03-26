@@ -158,7 +158,10 @@ def parse_fix_file(filepath, nn):
 
 
 def find_ensi_files(directory, jobname):
-    """Find all EnSight variable files for a job. Returns dict of {type: [paths]}."""
+    """Find all EnSight variable files for a job.
+
+    Returns dict of {type: [(step_number, path), ...]} sorted by step number.
+    """
     found = {}
     pattern = os.path.join(directory, f"{jobname}.ensi.*")
     for path in sorted(glob.glob(pattern)):
@@ -167,7 +170,8 @@ def find_ensi_files(directory, jobname):
         m = re.match(rf'{re.escape(jobname)}\.ensi\.([A-Z]+)-(\d+)', basename)
         if m:
             var_type = m.group(1)
-            found.setdefault(var_type, []).append(path)
+            step_num = int(m.group(2))
+            found.setdefault(var_type, []).append((step_num, path))
     return found
 
 
@@ -267,13 +271,16 @@ def write_vtu(root, filepath):
 
 
 def write_pvd(timestep_files, filepath):
-    """Write a PVD collection file referencing per-timestep VTU files."""
+    """Write a PVD collection file referencing per-timestep VTU files.
+
+    timestep_files: list of (time_value, vtu_path)
+    """
     root = ET.Element('VTKFile', type='Collection', version='1.0',
                        byte_order='LittleEndian')
     collection = ET.SubElement(root, 'Collection')
-    for i, vtu_path in enumerate(timestep_files):
+    for time_val, vtu_path in timestep_files:
         ET.SubElement(collection, 'DataSet',
-                      timestep=str(i), part='0',
+                      timestep=str(time_val), part='0',
                       file=os.path.basename(vtu_path))
     write_vtu(root, filepath)
 
@@ -302,6 +309,8 @@ def main():
     parser.add_argument('--fix', default=None, help='ParaFEM .fix file (optional)')
     parser.add_argument('--ensi_dir', default=None,
                         help='Directory containing .ensi.* solver output files')
+    parser.add_argument('--dtim', type=float, default=None,
+                        help='Time step size (s) from p124 .dat — used for PVD timeline labels')
     parser.add_argument('--ensi_tarball', default=None,
                         help='Tarball of .ensi.* files (alternative to --ensi_dir)')
     parser.add_argument('--jobname', default='job',
@@ -344,10 +353,10 @@ def main():
     ensi_dir = args.ensi_dir
     if args.ensi_tarball and os.path.exists(args.ensi_tarball):
         import tarfile
-        ensi_dir = '/tmp/ensi_unpack'
-        os.makedirs(ensi_dir, exist_ok=True)
+        import tempfile
+        ensi_dir = tempfile.mkdtemp()
         with tarfile.open(args.ensi_tarball, 'r:gz') as tf:
-            tf.extractall(ensi_dir)
+            tf.extractall(ensi_dir, filter='data')
         print(f"  Unpacked EnSight tarball to {ensi_dir}")
 
     # Find and load solver output fields
@@ -355,16 +364,17 @@ def main():
         ensi_files = find_ensi_files(ensi_dir, args.jobname)
         print(f"  Found EnSight variables: {list(ensi_files.keys())}")
 
-        for var_type, paths in ensi_files.items():
+        for var_type, step_paths in ensi_files.items():
             var_name = ENSI_VAR_NAMES.get(var_type, var_type)
             is_vector = ENSI_VAR_IS_VECTOR.get(var_type, False)
 
-            if len(paths) == 1:
+            if len(step_paths) == 1:
                 # Single timestep — add directly to point data
+                _, path = step_paths[0]
                 if is_vector:
-                    data = parse_ensi_vector(paths[0], nn)
+                    data = parse_ensi_vector(path, nn)
                 else:
-                    data = parse_ensi_scalar(paths[0])
+                    data = parse_ensi_scalar(path)
 
                 if len(data) == nn:
                     point_data[var_name] = data
@@ -373,13 +383,14 @@ def main():
                     print(f"  WARNING: {var_name} has {len(data)} values, "
                           f"expected {nn}. Skipping.", file=sys.stderr)
 
-            elif len(paths) > 1:
+            elif len(step_paths) > 1:
                 # Multiple timesteps — write .pvd + per-step .vtu files
                 output_base = os.path.splitext(args.output)[0]
                 pvd_path = output_base + '.pvd'
-                vtu_paths = []
+                pvd_entries = []
 
-                for step_idx, path in enumerate(paths):
+                for step_num, path in step_paths:
+                    time_val = step_num * args.dtim if args.dtim is not None else step_num
                     if is_vector:
                         data = parse_ensi_vector(path, nn)
                     else:
@@ -389,16 +400,16 @@ def main():
                     if len(data) == nn:
                         step_point_data[var_name] = data
 
-                    step_vtu = f"{output_base}_{step_idx:06d}.vtu"
+                    step_vtu = f"{output_base}_{step_num:06d}.vtu"
                     root = build_vtu_tree(nodes, elements, nod,
                                           step_point_data, cell_data)
                     write_vtu(root, step_vtu)
-                    vtu_paths.append(step_vtu)
-                    print(f"  Wrote timestep {step_idx}: {step_vtu}")
+                    pvd_entries.append((time_val, step_vtu))
+                    print(f"  Wrote step {step_num} (t={time_val}): {step_vtu}")
 
-                write_pvd(vtu_paths, pvd_path)
+                write_pvd(pvd_entries, pvd_path)
                 print(f"  Wrote PVD collection: {pvd_path}")
-                print(f"Done. {len(vtu_paths)} timestep files + PVD collection.")
+                print(f"Done. {len(pvd_entries)} timestep files + PVD collection.")
                 return
 
     # Single timestep — write one .vtu
