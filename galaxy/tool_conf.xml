@@ -1,0 +1,17 @@
+<toolbox monitor="true">
+    <section id="gdps_preprocessing" name="GDPS Pre-Processing">
+        <tool file="tools/gdps_meshgen_box/gdps_meshgen_box.xml" />
+        <tool file="tools/gdps_mesh_import/gdps_mesh_import.xml" />
+        <tool file="tools/gdps_bc_thermal/gdps_bc_thermal.xml" />
+        <tool file="tools/gdps_bc_transient/gdps_bc_transient.xml" />
+    </section>
+    <section id="gdps_solvers" name="GDPS Solvers">
+        <tool file="tools/gdps_steady_thermal/gdps_steady_thermal.xml" />
+        <tool file="tools/gdps_transient_thermal/gdps_transient_thermal.xml" />
+    </section>
+    <section id="gdps_postprocessing" name="GDPS Post-Processing">
+        <tool file="tools/gdps_postprocess/gdps_postprocess.xml" />
+        <tool file="tools/gdps_parafem2vtu/gdps_parafem2vtu.xml" />
+        <tool file="tools/gdps_parafem2vtu_transient/gdps_parafem2vtu_transient.xml" />
+    </section>
+</toolbox>

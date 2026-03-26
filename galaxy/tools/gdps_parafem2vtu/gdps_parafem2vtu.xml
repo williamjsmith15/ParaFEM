@@ -1,0 +1,76 @@
+<tool id="gdps_parafem2vtu" name="ParaFEM to VTU (Steady State)" version="0.2.0">
+
+    <description>Convert steady-state ParaFEM output to VTK Unstructured Grid (.vtu) for ParaView</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-vtu:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file' job.d &&
+
+        #if str($bnd_file) != "None"
+            cp '$bnd_file' job.bnd &&
+        #end if
+
+        #if str($fix_file) != "None"
+            cp '$fix_file' job.fix &&
+        #end if
+
+        #if str($ensi_tarball) != "None"
+            tar xzf '$ensi_tarball' &&
+        #end if
+
+        python3 '$__tool_directory__/parafem2vtu.py'
+            --mesh_d job.d
+            #if str($bnd_file) != "None"
+                --bnd job.bnd
+            #end if
+            #if str($fix_file) != "None"
+                --fix job.fix
+            #end if
+            #if str($ensi_tarball) != "None"
+                --ensi_dir .
+            #end if
+            --jobname job
+            --output result.vtu
+            2>&1 &&
+
+        cp result.vtu '$output_vtu'
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" label="Mesh geometry (.d)"
+               help="ParaFEM .d mesh file with nodal coordinates and element connectivity" />
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)" optional="true"
+               help="ParaFEM .bnd file — adds BoundaryNodes field to output" />
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)" optional="true"
+               help="ParaFEM .fix file — adds FixedFreedoms field to output" />
+        <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)" optional="true"
+               help="Tarball of .ensi.NDPTL-* or .ensi.DISPL-* files from solver" />
+    </inputs>
+
+    <outputs>
+        <data format="vtu" name="output_vtu" label="VTK output (.vtu)" />
+    </outputs>
+
+    <help>
+Converts steady-state ParaFEM mesh and solver output into a single VTK Unstructured
+Grid (.vtu) file for direct visualization in ParaView.
+
+Output fields:
+- BoundaryNodes (from .bnd, if provided)
+- FixedFreedoms (from .fix, if provided)
+- MaterialID (if multiple materials)
+- Potential (NDPTL, from p123)
+- Displacement (DISPL, from p121/p122)
+
+Supported element types: 8-node hex, 20-node hex, 4-node tet, 10-node tet.
+
+This tool can be used at any pipeline stage:
+- After mesh generation: visualize mesh + boundary nodes
+- After BC generation: visualize mesh + fixed freedoms
+- After solver: visualize mesh + solution fields
+    </help>
+</tool>

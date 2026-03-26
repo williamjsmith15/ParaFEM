@@ -1,0 +1,53 @@
+<tool id="gdps_steady_thermal" name="ParaFEM Steady-State Thermal Solver" version="0.1.0">
+
+    <description>Solve 3D steady-state heat conduction using ParaFEM p123 (PCG solver)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file' job.d &&
+        cp '$bnd_file' job.bnd &&
+        cp '$fix_file' job.fix &&
+        cp '$dat_file' job.dat &&
+        mpirun -np \${GALAXY_SLOTS:-1} p123 job 2>&1;
+        RC=\$?;
+        if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
+        if ls job.ensi.* 1>/dev/null 2>&1; then tar czf '$output_ensi' job.ensi.*; else tar czf '$output_ensi' --files-from /dev/null; fi;
+        exit \${RC}
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" label="Mesh geometry (.d)"
+               help="Mesh file with nodal coordinates and element connectivity" />
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)"
+               help="Restrained nodes from BC generator" />
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)"
+               help="Prescribed temperature values from BC generator" />
+        <param type="data" name="dat_file" label="Control data (.dat)"
+               help="Solver control parameters from BC generator" />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_res" label="Results summary (.res)" />
+        <data format="tar.gz" name="output_ensi" label="EnSight output (.ensi.tar.gz)" />
+    </outputs>
+
+    <help>
+Solves 3D steady-state heat conduction (Laplace's equation) using ParaFEM program p123.
+
+Solver: Preconditioned Conjugate Gradient (PCG) with diagonal preconditioner,
+element-by-element assembly. Uses 8-node hexahedral elements.
+
+Boundary conditions: Dirichlet (fixed temperature) via the penalty method.
+Nodes not in the .bnd file have natural zero-flux (insulated) BCs.
+
+Outputs:
+- .res: text summary with convergence info and sample potentials/temperatures
+- .ensi.tar.gz: EnSight Gold scalar field (NDPTL) for ParaView visualization
+
+The number of MPI processes is controlled by GALAXY_SLOTS.
+    </help>
+</tool>

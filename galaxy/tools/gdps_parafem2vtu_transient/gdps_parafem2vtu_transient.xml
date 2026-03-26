@@ -1,0 +1,75 @@
+<tool id="gdps_parafem2vtu_transient" name="ParaFEM to VTU (Transient)" version="0.2.0">
+
+    <description>Convert transient ParaFEM output to VTK time series (.pvd + .vtu) for ParaView</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-vtu:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file' job.d &&
+
+        #if str($bnd_file) != "None"
+            cp '$bnd_file' job.bnd &&
+        #end if
+
+        #if str($fix_file) != "None"
+            cp '$fix_file' job.fix &&
+        #end if
+
+        tar xzf '$ensi_tarball' &&
+
+        python3 '$__tool_directory__/parafem2vtu.py'
+            --mesh_d job.d
+            #if str($bnd_file) != "None"
+                --bnd job.bnd
+            #end if
+            #if str($fix_file) != "None"
+                --fix job.fix
+            #end if
+            --ensi_dir .
+            --dtim '$dtim'
+            --jobname job
+            --output result.vtu
+            2>&1 &&
+
+        tar czf '$output_tarball' result.pvd result_*.vtu
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" label="Mesh geometry (.d)"
+               help="ParaFEM .d mesh file with nodal coordinates and element connectivity" />
+        <param type="data" name="bnd_file" label="Boundary restraints (.bnd)" optional="true"
+               help="ParaFEM .bnd file — adds BoundaryNodes field to output" />
+        <param type="data" name="fix_file" label="Fixed freedoms (.fix)" optional="true"
+               help="ParaFEM .fix file — adds FixedFreedoms field to output" />
+        <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)"
+               help="Tarball of .ensi.NDTTR-* files from transient solver" />
+        <param type="float" name="dtim" value="1.0" label="Time step size (s)"
+               help="Time step from the solver .dat file. Sets real-time labels on the ParaView timeline." />
+    </inputs>
+
+    <outputs>
+        <data format="tar.gz" name="output_tarball" label="VTK time series (.tar.gz)"
+              help="Extract and open the .pvd file in ParaView to view the time series." />
+    </outputs>
+
+    <help>
+Converts transient ParaFEM solver output into a VTK time series for ParaView.
+
+Outputs a .tar.gz containing:
+- A .pvd collection file (open this in ParaView)
+- Per-timestep .vtu files with Temperature field
+
+Each .vtu also includes (if provided):
+- BoundaryNodes (from .bnd)
+- FixedFreedoms (from .fix)
+- MaterialID (if multiple materials)
+
+The dtim parameter sets the real-time labels on the ParaView timeline
+(timestep N is labelled as N * dtim seconds).
+
+Supported element types: 8-node hex, 20-node hex, 4-node tet, 10-node tet.
+    </help>
+</tool>

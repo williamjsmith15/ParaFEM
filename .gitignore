@@ -1,0 +1,51 @@
+### Fortran ###
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# AI Ignore
+CLAUDE.md
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# Testing temp files
+testing_tempfiles/
+
+# Generated Galaxy config
+galaxy/deploy/config/job_conf.xml
+
+# Cloudflare tunnel credentials
+galaxy/deploy/.secret_token
+
