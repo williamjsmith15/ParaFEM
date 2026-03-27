@@ -1,0 +1,47 @@
+{
+  "iron": {
+    "name": "Iron (Alpha-Fe)",
+    "solubility": {
+      "S0": 5.1e-3,
+      "Es": 28600.0,
+      "units_S0": "mol/(m^3*Pa^0.5)",
+      "units_Es": "J/mol"
+    },
+    "diffusivity": {
+      "D0": 4.1e-8,
+      "Ea": 4100.0,
+      "units_D0": "m^2/s",
+      "units_Ea": "J/mol"
+    }
+  },
+  "copper": {
+    "name": "Copper",
+    "solubility": {
+      "S0": 0.6e-3,
+      "Es": 39400.0,
+      "units_S0": "mol/(m^3*Pa^0.5)",
+      "units_Es": "J/mol"
+    },
+    "diffusivity": {
+      "D0": 1.1e-6,
+      "Ea": 39400.0,
+      "units_D0": "m^2/s",
+      "units_Ea": "J/mol"
+    }
+  },
+  "tungsten": {
+    "name": "Tungsten",
+    "solubility": {
+      "S0": 0.003e-3,
+      "Es": 104000.0,
+      "units_S0": "mol/(m^3*Pa^0.5)",
+      "units_Es": "J/mol"
+    },
+    "diffusivity": {
+      "D0": 1.9e-7,
+      "Ea": 39000.0,
+      "units_D0": "m^2/s",
+      "units_Ea": "J/mol"
+    }
+  }
+}
