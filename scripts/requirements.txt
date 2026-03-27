@@ -1,0 +1,2 @@
+influxdb-client>=1.36.0
+bioblend>=1.2.0
