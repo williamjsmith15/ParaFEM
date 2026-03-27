@@ -132,6 +132,70 @@ def write_fix(filepath, fixed_nodes):
             f.write(f"{node_id:10d}         1  {temp:16.8E}\n")
 
 
+def parse_nset_file(filepath):
+    """
+    Parses a ParaFEM .nset file.
+    Returns a dictionary mapping nset names to a set of node IDs.
+    """
+    nsets = {}
+    with open(filepath, 'r') as f:
+        lines = [line.strip() for line in f.readlines() if line.strip()]
+        if not lines:
+            return nsets
+
+        # Line 0: Problem type ('none' or 'kubc')
+        # Line 1: Number of nsets
+        try:
+            num_nsets = int(lines[1])
+        except (ValueError, IndexError):
+            return nsets
+
+        current_line = 2
+        for _ in range(num_nsets):
+            if current_line >= len(lines):
+                break
+            
+            # *NSET <node_count> <nset_name>
+            header = lines[current_line].split()
+            if not header or header[0] != "*NSET":
+                current_line += 1
+                continue
+                
+            node_count = int(header[1])
+            nset_name = header[2]
+            current_line += 1
+            
+            node_ids = set()
+            for _ in range(node_count):
+                if current_line >= len(lines):
+                    break
+                node_ids.add(int(lines[current_line]))
+                current_line += 1
+            
+            nsets[nset_name] = node_ids
+            
+    return nsets
+
+
+def assign_nset_bc(nsets, zones, temp_key='temperature'):
+    """
+    Assigns values to nodes based on NSET names.
+    zones: list of dicts with 'nset_name' and temp_key
+    Returns dict {node_id: value}
+    """
+    fixed_nodes = {}
+    for zone in zones:
+        nset_name = zone.get('nset_name')
+        val = zone.get(temp_key)
+        if nset_name in nsets:
+            for nid in nsets[nset_name]:
+                fixed_nodes[nid] = val
+            print(f"    NSET '{nset_name}': {len(nsets[nset_name])} nodes at {val}")
+        else:
+            print(f"    Warning: NSET '{nset_name}' not found in .nset file.")
+    return fixed_nodes
+
+
 def sanitize_zone_json(zone_str):
     zone_str = zone_str.replace("'", '"')
     zone_str = re.sub(r'(\b\w+\b)(\s*:)', r'"\1"\2', zone_str)

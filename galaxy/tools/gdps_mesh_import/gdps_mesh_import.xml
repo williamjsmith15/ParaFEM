@@ -13,7 +13,15 @@
         #else
             inp2pf job.inp 2>&1 &&
         #end if
-        mv job.d '$output_d'
+        mv job.d '$output_d' &&
+        mv job.nset '$output_nset' &&
+        echo "ParaFEM Mesh Import Summary" > '$output_summary' &&
+        echo "---------------------------" >> '$output_summary' &&
+        grep "*NSET" '$output_nset' | while read -r line; do
+            count=\$(echo \$line | awk '{print \$2}')
+            name=\$(echo \$line | awk '{print \$3}')
+            echo "NSET: \$name (\$count nodes)" >> '$output_summary'
+        done
     ]]></command>
 
     <inputs>
@@ -27,6 +35,8 @@
 
     <outputs>
         <data format="txt" name="output_d" label="Mesh geometry (.d)" />
+        <data format="txt" name="output_nset" label="Node sets (.nset)" />
+        <data format="txt" name="output_summary" label="NSET Summary" />
     </outputs>
 
     <help>
