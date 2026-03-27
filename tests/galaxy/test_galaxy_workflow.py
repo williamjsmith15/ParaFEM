@@ -559,23 +559,9 @@ def bc_schedule_workflow_result(gi, bc_schedule_workflow_id):
     history = gi.histories.create_history(name="test-bc-schedule")
     history_id = history["id"]
 
-    upload = gi.tools.upload_file(FIXTURE_MESH, history_id)
-    dataset_id = upload["outputs"][0]["id"]
-
-    deadline = time.time() + 60
-    while time.time() < deadline:
-        ds = gi.datasets.show_dataset(dataset_id)
-        if ds["state"] == "ok":
-            break
-        if ds["state"] == "error":
-            pytest.fail(f"Upload failed for {FIXTURE_MESH}")
-        time.sleep(2)
-    else:
-        pytest.fail(f"Upload timed out for {FIXTURE_MESH}")
-
     invocation = gi.workflows.invoke_workflow(
         bc_schedule_workflow_id,
-        inputs={"0": {"id": dataset_id, "src": "hda"}},
+        inputs={},
         history_id=history_id,
         allow_tool_state_corrections=True,
     )
@@ -649,14 +635,14 @@ class TestBCScheduleWorkflow:
         ndttr = [n for n in names if "NDTTR" in n]
         assert len(ndttr) == 11, f"Expected 11 NDTTR files (t=0 + nstep/npri), got {len(ndttr)}: {names}"
 
-    def test_vtu_valid(self, bc_schedule_workflow_result):
+    def test_vtu_tarball_valid(self, bc_schedule_workflow_result):
         gi, history_id = bc_schedule_workflow_result
-        vtu_text = _download_text(gi, history_id, r"VTK output")
-        tree = ET.fromstring(vtu_text)
-        assert tree.tag == "VTKFile"
-        piece = tree.find(".//Piece")
-        assert piece is not None
-        assert int(piece.attrib["NumberOfPoints"]) > 0
+        raw = _download_dataset(gi, history_id, r"VTK time series")
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        names = tf.getnames()
+        tf.close()
+        assert any(n.endswith(".pvd") for n in names), f"No .pvd in VTK tarball: {names}"
+        assert any(n.endswith(".vtu") for n in names), f"No .vtu in VTK tarball: {names}"
 
 
 SENSOR_TO_BCS_TIMEOUT = 120

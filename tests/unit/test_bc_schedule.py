@@ -62,6 +62,33 @@ def test_empty_schedule(small_mesh_d):
     finally:
         os.unlink(path)
 
+def test_nset_mode(small_mesh_d, small_nset):
+    nodes, elements, _, nod = parse_d_file(small_mesh_d)
+    boundary_nodes = find_boundary_nodes(nodes, elements, nod)
+    nsets = parse_nset_file(small_nset)
+    schedule = [
+        {"step": 3, "zones": [{"nset_name": "UPSTREAM", "temperature": 700.0},
+                               {"nset_name": "DOWNSTREAM", "temperature": 293.0}]}
+    ]
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.bcs', delete=False) as f:
+        path = f.name
+    try:
+        write_bcs(path, schedule, nodes, boundary_nodes, 'nset', 'z', nsets)
+        with open(path) as f:
+            lines = [line.strip() for line in f if line.strip()]
+        assert lines[0] == '3'
+        node_ids = [int(l.split()[0]) for l in lines[1:]]
+        assert node_ids == sorted(node_ids)
+        upstream_nodes = sorted(nsets['UPSTREAM'])
+        for nid in upstream_nodes:
+            matching = [l for l in lines[1:] if int(l.split()[0]) == nid]
+            assert len(matching) == 1
+            assert float(matching[0].split()[2]) == pytest.approx(700.0)
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+
 def test_main_script_zone_mode(small_mesh_d, monkeypatch):
     schedule_data = [
         {"step": 1, "zones": [{"axis_min": 0.9, "axis_max": 1.0, "temperature": 300.0}]}

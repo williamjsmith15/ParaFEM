@@ -12,9 +12,15 @@ TOOL_DIR = os.path.join(
 )
 sys.path.append(TOOL_DIR)
 
-# Mock parafem_common before importing the tool
+# Mock parafem_common before importing the tool, then restore so other test
+# modules aren't affected by the mock surviving in sys.modules.
+_real_parafem_common = sys.modules.get('parafem_common')
 sys.modules['parafem_common'] = MagicMock()
 import gdps_mesh_preview
+if _real_parafem_common is None:
+    sys.modules.pop('parafem_common', None)
+else:
+    sys.modules['parafem_common'] = _real_parafem_common
 
 @pytest.fixture
 def tool_xml():

@@ -203,6 +203,48 @@ def test_step_zero_skipped(small_mesh_d):
                 os.unlink(p)
 
 
+def test_nset_mode(small_mesh_d, small_nset):
+    common = _get_common()
+    tool = _get_tool()
+
+    nodes, elements, _, nod = common.parse_d_file(small_mesh_d)
+    boundary_nodes = common.find_boundary_nodes(nodes, elements, nod)
+    nsets = common.parse_nset_file(small_nset)
+
+    nset_template = [
+        {"col_name": "upstream_temp", "nset_name": "UPSTREAM"},
+        {"col_name": "downstream_temp", "nset_name": "DOWNSTREAM"},
+    ]
+    csv_rows = [
+        {"elapsed_seconds": "30.0", "upstream_temp": "800.0", "downstream_temp": "293.0"},
+    ]
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        csv_path = f.name
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.bcs', delete=False) as f:
+        bcs_path = f.name
+    try:
+        _write_csv(csv_rows, csv_path)
+        with open(csv_path, newline='') as f:
+            rows = list(csv.DictReader(f))
+        tool.write_bcs_from_sensor(
+            bcs_path, rows, nset_template, nodes, boundary_nodes,
+            'nset', 'z', nsets, dtim=10.0,
+        )
+        lines = _read_bcs(bcs_path)
+        assert lines[0] == '3'  # step = round(30.0 / 10.0)
+        node_ids = [int(l.split()[0]) for l in lines[1:]]
+        assert node_ids == sorted(node_ids)
+        upstream_ids = sorted(nsets['UPSTREAM'])
+        for nid in upstream_ids:
+            match = [l for l in lines[1:] if int(l.split()[0]) == nid]
+            assert len(match) == 1
+            assert float(match[0].split()[2]) == pytest.approx(800.0)
+    finally:
+        for p in (csv_path, bcs_path):
+            if os.path.exists(p):
+                os.unlink(p)
+
+
 def test_empty_csv(small_mesh_d):
     common = _get_common()
     tool = _get_tool()

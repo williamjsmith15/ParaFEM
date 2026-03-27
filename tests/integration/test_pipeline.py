@@ -476,6 +476,84 @@ class TestBCSchedule:
 
 
 @skip_no_docker
+class TestSensorToBCS:
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.workdir = str(tmp_path)
+        if not image_exists('parafem:local'):
+            pytest.skip('parafem:local not built')
+        if not image_exists('parafem-bcgen:local'):
+            pytest.skip('parafem-bcgen:local not built')
+        import shutil
+        fixtures = os.path.join(REPO_ROOT, 'tests', 'fixtures')
+        shutil.copy(os.path.join(fixtures, 'small_2x2x2.d'), os.path.join(self.workdir, 'job.d'))
+
+    def test_sensor_to_bcs_pipeline(self):
+        import json, csv
+
+        # 1. Static BCs (both faces at 300K)
+        zone_json = '[{"axis_min":0.0,"axis_max":0.1,"temperature":300.0},{"axis_min":0.9,"axis_max":1.0,"temperature":300.0}]'
+        with open(os.path.join(self.workdir, 'zones.json'), 'w') as f:
+            f.write(zone_json)
+
+        bc_cmd = """python3 /tools/gdps_bc_transient/gdps_bc_transient.py \
+            --mesh_d /work/job.d --kx 50.0 --ky 50.0 --kz 50.0 \
+            --rho 7800.0 --cp 500.0 --val0 300.0 --dtim 10.0 \
+            --nstep 20 --npri 5 --theta 1.0 --tol 1.0e-8 --limit 200 \
+            --zone_config /work/zones.json --bc_axis z \
+            --output_dat /work/job.dat --output_bnd /work/job.bnd \
+            --output_fix /work/job.fix --output_mat /work/job.mat \
+            --output_d /work/job_out.d"""
+        run_in_container('parafem-bcgen:local', self.workdir, bc_cmd)
+
+        # 2. Sensor CSV: elapsed 50s → step 5 (hot), elapsed 150s → step 15 (very hot)
+        sensor_csv_path = os.path.join(self.workdir, 'sensors.csv')
+        with open(sensor_csv_path, 'w', newline='') as f:
+            w = csv.writer(f)
+            w.writerow(['elapsed_seconds', 'upstream_temp', 'downstream_temp'])
+            w.writerow([50.0, 600.0, 300.0])
+            w.writerow([150.0, 1000.0, 300.0])
+
+        zone_template = json.dumps([
+            {"col_name": "upstream_temp", "axis_min": 0.9, "axis_max": 1.0},
+            {"col_name": "downstream_temp", "axis_min": 0.0, "axis_max": 0.1},
+        ])
+        with open(os.path.join(self.workdir, 'zone_template.json'), 'w') as f:
+            f.write(zone_template)
+
+        sensor_cmd = """python3 /tools/gdps_sensor_to_bcs/gdps_sensor_to_bcs.py \
+            --mesh_d /work/job.d \
+            --sensor_csv /work/sensors.csv \
+            --zone_template /work/zone_template.json \
+            --bc_mode zone --bc_axis z --dtim 10.0 \
+            --output_bcs /work/job.bcs"""
+        run_in_container('parafem-bcgen:local', self.workdir, sensor_cmd)
+
+        # Verify .bcs has step headers 5 and 15
+        with open(os.path.join(self.workdir, 'job.bcs')) as f:
+            bcs_lines = [l.strip() for l in f if l.strip()]
+        step_headers = [l for l in bcs_lines if l.isdigit()]
+        assert '5' in step_headers
+        assert '15' in step_headers
+
+        # 3. Solve with .bcs
+        solver_cmd = "cd /work && mpirun -np 1 gdps_thermal_transient job 2>&1"
+        result = run_in_container('parafem:local', self.workdir, solver_cmd)
+        assert result.returncode == 0
+
+        with open(os.path.join(self.workdir, 'job.res')) as f:
+            content = f.read()
+        assert 'NaN' not in content
+
+        rows = re.findall(r'^\s+([\d.E+\-]+)\s+([\d.E+\-]+)', content, re.MULTILINE)
+        assert len(rows) == 5  # nstep=20, npri=5 → 4 intervals + t=0
+        temps = [float(r[1]) for r in rows]
+        assert temps[-1] > temps[0]
+        assert all(300 <= t <= 1000 for t in temps)
+
+
+@skip_no_docker
 class TestTransientSolver:
 
     @pytest.fixture(autouse=True)
