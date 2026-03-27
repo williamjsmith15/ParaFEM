@@ -18,8 +18,10 @@ import pytest
 
 
 EXPECTED_TOOLS = [
+    "gdps_mesh_convert",
     "gdps_meshgen_box",
     "gdps_mesh_import",
+    "gdps_mesh_preview",
     "gdps_bc_thermal",
     "gdps_steady_thermal",
     "gdps_postprocess",

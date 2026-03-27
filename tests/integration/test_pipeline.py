@@ -422,7 +422,7 @@ class TestTransientSolver:
         shutil.copy(os.path.join(fixtures, 'small_2x2x2.fix'), os.path.join(self.workdir, 'job.fix'))
 
     def _run_solver(self, np=1):
-        cmd = f"cd /work && mpirun -np {np} p124 job 2>&1"
+        cmd = f"cd /work && mpirun -np {np} gdps_thermal_transient job 2>&1"
         return run_in_container('parafem:local', self.workdir, cmd)
 
     def test_solver_runs(self):
@@ -497,7 +497,7 @@ class TestTransientSolverLongRun:
         shutil.copy(os.path.join(fixtures, 'small_2x2x2.fix'), os.path.join(self.workdir, 'job.fix'))
 
     def _run_solver(self):
-        cmd = "cd /work && mpirun -np 1 p124 job 2>&1"
+        cmd = "cd /work && mpirun -np 1 gdps_thermal_transient job 2>&1"
         return run_in_container('parafem:local', self.workdir, cmd)
 
     def test_midplane_node_heats_up(self):
@@ -546,7 +546,7 @@ class TestTransientSolverLongRun:
 
 @skip_no_docker
 class TestTransientFullPipeline:
-    """End-to-end test: meshgen -> bc_transient -> p124 -> parafem2vtu (PVD)."""
+    """End-to-end test: meshgen -> bc_transient -> gdps_thermal_transient -> parafem2vtu (PVD)."""
 
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path):
@@ -605,8 +605,8 @@ p12meshgen job 2>&1
         for fname in ['job.dat', 'job.bnd', 'job.fix', 'job.mat']:
             assert os.path.exists(os.path.join(self.workdir, fname)), f"Missing {fname}"
 
-        # Step 3: Solver (p124 transient thermal)
-        solver_cmd = "cd /work && mpirun -np 1 p124 job 2>&1"
+        # Step 3: Solver (gdps_thermal_transient)
+        solver_cmd = "cd /work && mpirun -np 1 gdps_thermal_transient job 2>&1"
         r = run_in_container('parafem:local', self.workdir, solver_cmd)
         assert r.returncode == 0, f"Solver failed: {r.stdout}\n{r.stderr}"
 
@@ -638,6 +638,56 @@ p12meshgen job 2>&1
         assert root.attrib['type'] == 'Collection'
 
         # Verify at least one timestep VTU file exists
-        vtu_files = [f for f in os.listdir(self.workdir)
-                     if re.match(r'result_\d{6}\.vtu$', f)]
-        assert len(vtu_files) >= 1, f"No timestep VTU files found, dir contents: {os.listdir(self.workdir)}"
+        vtu_files = [f for f in os.listdir(self.workdir)]
+        assert any(re.match(r'result_\d{6}\.vtu$', f) for f in vtu_files)
+
+
+@skip_no_docker
+class TestImportPipeline:
+    """End-to-end test for imported meshes: .inp -> .d/.nset -> BC (nset mode) -> solver."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.workdir = str(tmp_path)
+        if not image_exists('parafem:local'):
+            pytest.skip('parafem:local not built')
+        if not image_exists('parafem-bcgen:local'):
+            pytest.skip('parafem-bcgen:local not built')
+        
+        import shutil
+        fixtures = os.path.join(REPO_ROOT, 'tests', 'fixtures')
+        shutil.copy(os.path.join(fixtures, 'small_2x2x2_import.inp'), 
+                    os.path.join(self.workdir, 'job.inp'))
+
+    def test_import_to_solve_steady(self):
+        # 1. Import
+        import_cmd = "inp2pf -renumber job.inp 2>&1"
+        r = run_in_container('parafem:local', self.workdir, import_cmd)
+        assert r.returncode == 0
+        
+        # 2. BC (NSET mode)
+        bc_config = '[{"nset_name": "UPSTREAM", "temperature": 800.0}, {"nset_name": "DOWNSTREAM", "temperature": 300.0}]'
+        bc_cmd = f"""python3 /tools/gdps_bc_thermal/gdps_bc_thermal.py \
+            --mesh_d /work/job.d \
+            --kx 50 --ky 50 --kz 50 \
+            --bc_mode nset \
+            --nset_file /work/job.nset \
+            --zone_config '{bc_config}' \
+            --output_dat /work/job.dat \
+            --output_bnd /work/job.bnd \
+            --output_fix /work/job.fix \
+            --output_d /work/job_out.d"""
+        r = run_in_container('parafem-bcgen:local', self.workdir, bc_cmd)
+        assert r.returncode == 0
+        
+        # 3. Solver
+        solver_cmd = "mkdir -p run && cd run && cp /work/job.dat /work/job.d /work/job.bnd /work/job.fix . && mpirun -np 1 p123 job 2>&1 && cp job.res /work/"
+        r = run_in_container('parafem:local', self.workdir, solver_cmd)
+        assert r.returncode == 0
+        
+        # 4. Verify results
+        with open(os.path.join(self.workdir, 'job.res')) as f:
+            res = f.read()
+        assert 'NaN' not in res
+        match = re.search(r'iterations to convergence was\s+(\d+)', res)
+        assert match and int(match.group(1)) < 100
