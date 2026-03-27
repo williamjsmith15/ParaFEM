@@ -6,6 +6,8 @@
         <tool file="/galaxy/server/parafem/tools/gdps_mesh_preview/gdps_mesh_preview.xml" />
         <tool file="/galaxy/server/parafem/tools/gdps_bc_thermal/gdps_bc_thermal.xml" />
         <tool file="/galaxy/server/parafem/tools/gdps_bc_transient/gdps_bc_transient.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_bc_schedule/gdps_bc_schedule.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_sensor_to_bcs/gdps_sensor_to_bcs.xml" />
         <tool file="/galaxy/server/parafem/tools/gdps_extract_ic/gdps_extract_ic.xml" />
     </section>
     <section id="gdps_solvers" name="GDPS Solvers">
