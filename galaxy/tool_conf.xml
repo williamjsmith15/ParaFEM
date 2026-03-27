@@ -9,6 +9,8 @@
         <tool file="tools/gdps_bc_schedule/gdps_bc_schedule.xml" />
         <tool file="tools/gdps_sensor_to_bcs/gdps_sensor_to_bcs.xml" />
         <tool file="tools/gdps_extract_ic/gdps_extract_ic.xml" />
+        <tool file="tools/gdps_sievert_bc/gdps_sievert_bc.xml" />
+        <tool file="tools/gdps_compute_diffusivity/gdps_compute_diffusivity.xml" />
     </section>
     <section id="gdps_solvers" name="GDPS Solvers">
         <tool file="tools/gdps_steady_thermal/gdps_steady_thermal.xml" />
