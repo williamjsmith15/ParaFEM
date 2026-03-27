@@ -661,7 +661,7 @@
         },
         "21": {
             "annotation": "",
-            "content_id": "gdps_parafem2vtu",
+            "content_id": "gdps_parafem2vtu_transient",
             "errors": null,
             "id": 21,
             "input_connections": {
@@ -680,6 +680,10 @@
                 "ensi_tarball": {
                     "id": 20,
                     "output_name": "output_ensi"
+                },
+                "dtim": {
+                    "id": 12,
+                    "output_name": "output"
                 }
             },
             "inputs": [],
@@ -691,8 +695,8 @@
                 "top": 200
             },
             "post_job_actions": {},
-            "tool_id": "gdps_parafem2vtu",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_id": "gdps_parafem2vtu_transient",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "1371f5ef-2be6-40f5-9fc9-5b269fbf0cd4",
