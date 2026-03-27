@@ -20,12 +20,14 @@ PROGRAM gdps_thermal_transient
  INTEGER::nod,nn,nr,nip,i,j,k,l,iters,limit,iel,nstep,npri,nres,it,prog, &
    nlen,node_end,node_start,nodes_pp,loaded_freedoms,fixed_freedoms,is,  &
    fixed_freedoms_pp,fixed_freedoms_start,loaded_freedoms_pp,np_types,   &
-   loaded_freedoms_start,nels,ndof,npes_pp,meshgen,partitioner,tz
+   loaded_freedoms_start,nels,ndof,npes_pp,meshgen,partitioner,tz,      &
+   ic_mode,j_chk,ier_mpi
  REAL(iwp)::kx,ky,kz,det,theta,dtim,real_time,tol,alpha,beta,up,big,q,   &
    rho,cp,val0
  REAL(iwp),PARAMETER::zero=0.0_iwp,penalty=1.e20_iwp,t0=0.0_iwp
  CHARACTER(LEN=15)::element; CHARACTER(LEN=50)::argv,fname
- CHARACTER(LEN=6)::ch; LOGICAL::converged=.false.
+ CHARACTER(LEN=100)::ic_file
+ CHARACTER(LEN=6)::ch; LOGICAL::converged=.false.,ctrl_exists
  REAL(iwp),ALLOCATABLE::loads_pp(:),u_pp(:),p_pp(:),points(:,:),kay(:,:),&
    fun(:),jac(:,:),der(:,:),deriv(:,:),weights(:),d_pp(:),col(:,:),      &
    kc(:,:),pm(:,:),funny(:,:),storka_pp(:,:,:),row(:,:),prop(:,:),       &
@@ -41,6 +43,21 @@ PROGRAM gdps_thermal_transient
  CALL read_p124(argv,numpe,dtim,element,fixed_freedoms,limit,            &
    loaded_freedoms,meshgen,nels,nip,nn,nod,npri,nr,nres,nstep,           &
    partitioner,theta,tol,np_types,val0)
+
+ ic_mode = 1; ic_file = ""; j_chk = 0
+ IF(numpe==1) THEN
+   fname = argv(1:nlen)//".ctrl"
+   INQUIRE(FILE=fname, EXIST=ctrl_exists)
+   IF(ctrl_exists) THEN
+     OPEN(20,FILE=fname,STATUS="OLD",ACTION="READ")
+     READ(20,*) ic_mode
+     IF(ic_mode > 1) READ(20,*) ic_file
+     CLOSE(20)
+   END IF
+ END IF
+ CALL MPI_BCAST(ic_mode,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+ IF(ic_mode > 1) CALL MPI_BCAST(ic_file,100,MPI_CHARACTER,0,MPI_COMM_WORLD,ier_mpi)
+
  CALL calc_nels_pp(argv,nels,npes,numpe,partitioner,nels_pp)
  ndof=nod*nodof; ntot=ndof
  ALLOCATE(g_num_pp(nod,nels_pp),g_coord_pp(nod,ndim,nels_pp),            &
@@ -59,15 +76,7 @@ PROGRAM gdps_thermal_transient
    utemp_pp(ntot,nels_pp),storkb_pp(ntot,ntot,nels_pp),                  &
    pmul_pp(ntot,nels_pp),kcx(ntot,ntot),kcy(ntot,ntot),kcz(ntot,ntot))
 !----------  find the steering array and equations per process -----------
- timest(2)=elap_time(); g_g_pp=0; neq=0
- IF(nr>0) THEN; CALL rearrange_2(rest)
-   elements_1: DO iel = 1, nels_pp
-     CALL find_g4(g_num_pp(:,iel),g_g_pp(:,iel),rest)
-   END DO elements_1
- ELSE
-   g_g_pp=g_num_pp  !When nr = 0, g_num_pp and g_g_pp are identical
- END IF
- neq=MAXVAL(g_g_pp); neq=max_p(neq); CALL calc_neq_pp
+ timest(2)=elap_time(); g_g_pp=g_num_pp; neq=nn; CALL calc_neq_pp
  CALL calc_npes_pp(npes,npes_pp); CALL make_ggl(npes_pp,npes,g_g_pp)
  DO i=1,neq_pp;IF(nres==ieq_start+i-1)THEN;it=numpe;is=i;END IF;END DO
  IF(numpe==it)THEN
@@ -147,7 +156,59 @@ PROGRAM gdps_thermal_transient
    OPEN(13, file=argv(1:nlen)//'.npp', status='replace', action='write')
    WRITE(13,*) nn; WRITE(13,*) nstep/npri; WRITE(13,*) npes
  END IF
- timesteps: DO j=1,nstep
+
+ ! Initialize xnew_pp (solution at start of loop) based on ic_mode
+ xnew_pp = zero
+ IF(ic_mode == 3) THEN
+   CALL read_x_pp(argv,npes,numpe,j_chk,xnew_pp)
+ ELSE IF(ic_mode == 2) THEN
+   OPEN(20,FILE=ic_file,STATUS="OLD",ACTION="READ")
+   READ(20,*) k
+   IF(k /= nn) THEN
+     IF(numpe==1) PRINT*,"Error: IC file node count mismatch", k, nn
+     CALL SHUTDOWN()
+   END IF
+   DO i=1,ieq_start-1
+     READ(20,*)
+   END DO
+   DO i=1,neq_pp
+     READ(20,*) xnew_pp(i)
+   END DO
+   CLOSE(20)
+ ELSE
+   xnew_pp = val0
+ END IF
+
+ ! Enforce fixed temperatures on initial state
+ IF(fixed_freedoms_pp>0) THEN
+   DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+     k=fixed_freedoms_start+i-1; xnew_pp(l)=val_f(k)
+   END DO
+ END IF
+
+ ! Output initial state at t=j_chk*dtim
+ IF(j_chk == 0) THEN
+   real_time = 0.0_iwp
+ ELSE
+   real_time = j_chk * dtim
+ END IF
+
+ IF(numpe==it) WRITE(11,'(2e12.4)') real_time, xnew_pp(is)
+
+ IF(numpe==1)THEN; WRITE(ch,'(I6.6)') j_chk
+   OPEN(12,file=argv(1:nlen)//".ensi.NDTTR-"//ch,status='replace',  &
+     action='write')
+   WRITE(12,'(A)')                                                  &
+     "Alya Ensight Gold --- Scalar per-node variable file"
+   WRITE(12,'(A/A/A)') "part", "    1","coordinates"
+ END IF
+ eld_pp=zero; ttr_pp=zero; CALL gather(xnew_pp(1:),eld_pp)
+ CALL scatter_nodes(npes,nn,nels_pp,g_num_pp,nod,nodof,nodes_pp,    &
+   node_start,node_end,eld_pp,ttr_pp,1)
+ CALL dismsh_ensi_p(12,1,nodes_pp,npes,numpe,1,ttr_pp)
+ IF(numpe==1) CLOSE(12)
+
+ timesteps: DO j=j_chk+1,nstep
     real_time=j*dtim; timest(3)=elap_time(); loads_pp=zero
 !---- apply loads (sources and/or sinks) supplied as a boundary value ----
     IF(loaded_freedoms_pp>0) THEN
@@ -157,44 +218,16 @@ PROGRAM gdps_thermal_transient
     END IF
 !- compute RHS of time stepping equation, using storkb_pp, add to loads --
     u_pp=zero; pmul_pp=zero; utemp_pp=zero
-    IF(j/=1) THEN
-      CALL gather(xnew_pp,pmul_pp)
-      elements_2a: DO iel=1,nels_pp
-        utemp_pp(:,iel)=MATMUL(storkb_pp(:,:,iel),pmul_pp(:,iel))
-      END DO elements_2a; CALL scatter(u_pp,utemp_pp)
-      IF(fixed_freedoms_pp>0) THEN
-        DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
-          k=fixed_freedoms_start+i-1; u_pp(l)=store_pp(i)*val_f(k)
-        END DO
-      END IF; loads_pp=loads_pp+u_pp
-    ELSE
-!------------------------ set initial temperature ------------------------
-      x_pp=val0; IF(numpe==it) WRITE(11,'(2e12.4)') 0.0_iwp, x_pp(is)
-      IF(fixed_freedoms_pp>0) THEN
-        DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
-          k=fixed_freedoms_start+i-1; x_pp(l)=val_f(k)
-        END DO
-      END IF
-      CALL gather(x_pp,pmul_pp)
-      elements_2c: DO iel=1,nels_pp
-        utemp_pp(:,iel)=MATMUL(storka_pp(:,:,iel),pmul_pp(:,iel))
-      END DO elements_2c; CALL scatter(u_pp,utemp_pp)
-      loads_pp=loads_pp+u_pp; tz=0
-!----------------------- output "results" at t=0 -------------------------
-      IF(numpe==1)THEN; WRITE(ch,'(I6.6)') tz
-        OPEN(12,file=argv(1:nlen)//".ensi.NDTTR-"//ch,status='replace',  &
-          action='write')
-        WRITE(12,'(A)')                                                  &
-          "Alya Ensight Gold --- Scalar per-node variable file"
-        WRITE(12,'(A/A/A)') "part", "    1","coordinates"
-      END IF
-      eld_pp=zero; ttr_pp=zero; CALL gather(x_pp(1:),eld_pp)
-      CALL scatter_nodes(npes,nn,nels_pp,g_num_pp,nod,nodof,nodes_pp,    &
-        node_start,node_end,eld_pp,ttr_pp,1)
-      CALL dismsh_ensi_p(12,1,nodes_pp,npes,numpe,1,ttr_pp)
-    END IF
-!--- set up PCG: r = loads - A*x_pp, with x_pp=0 as initial guess ------
-!--- (BC residual stays non-zero so PCG converges to prescribed values) --
+    CALL gather(xnew_pp,pmul_pp)
+    elements_2a: DO iel=1,nels_pp
+      utemp_pp(:,iel)=MATMUL(storkb_pp(:,:,iel),pmul_pp(:,iel))
+    END DO elements_2a; CALL scatter(u_pp,utemp_pp)
+    IF(fixed_freedoms_pp>0) THEN
+      DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+        k=fixed_freedoms_start+i-1; u_pp(l)=store_pp(i)*val_f(k)
+      END DO
+    END IF; loads_pp=loads_pp+u_pp
+!--- set up PCG: r = loads - A*x, with x=0 as initial guess ------
     r_pp=zero; pmul_pp=zero; utemp_pp=zero; x_pp=zero
     CALL gather(x_pp,pmul_pp)
     elements_2b: DO iel=1,nels_pp
@@ -240,6 +273,17 @@ PROGRAM gdps_thermal_transient
       timest(6)=timest(6)+(elap_time()-timest(5))
     END IF
   END DO timesteps
+
+  ! Write final checkpoint for restart chaining
+  IF(numpe==1) THEN
+    fname = argv(1:nlen)//".chk"
+    OPEN(28,file=fname,status='replace',action='write',             &
+         form='unformatted',access='stream')
+    WRITE(28) nstep
+  END IF
+  CALL write_x_pp("*FINAL",28,nstep,nodes_pp,npes,numpe,1,xnew_pp)
+  IF(numpe==1) CLOSE(28)
+
   IF(numpe==it) THEN
     WRITE(11,'(A,F10.4)') "The solution phase took ",timest(4)
     WRITE(11,'(A,F10.4)') "Writing the output took ",timest(6)
