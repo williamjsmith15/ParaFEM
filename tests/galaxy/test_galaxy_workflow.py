@@ -29,10 +29,38 @@ EXPECTED_TOOLS = [
     "gdps_bc_transient",
     "gdps_transient_thermal",
     "gdps_parafem2vtu_transient",
+    "gdps_extract_ic",
 ]
 
 WORKFLOW_TIMEOUT = 600  # 10 minutes max for full pipeline
 POLL_INTERVAL = 10
+
+
+def _wait_for_workflow(gi, invocation_id, history_id, timeout, label="Workflow"):
+    """Poll until all datasets are done, failing immediately on any error dataset."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        inv = gi.invocations.show_invocation(invocation_id)
+        state = inv["state"]
+        if state == "scheduled":
+            datasets = gi.histories.show_history(history_id, contents=True)
+            if datasets:
+                failed = [ds for ds in datasets if ds["state"] == "error"]
+                if failed:
+                    _dump_errors(gi, history_id)
+                    pytest.fail(
+                        f"{label}: {len(failed)} dataset(s) in error state: "
+                        f"{[d['name'] for d in failed]}"
+                    )
+                if all(ds["state"] in ("ok", "deleted", "discarded") for ds in datasets):
+                    break
+        elif state in ("cancelled", "failed"):
+            _dump_errors(gi, history_id)
+            pytest.fail(f"{label} invocation {state}")
+        time.sleep(POLL_INTERVAL)
+    else:
+        _dump_errors(gi, history_id)
+        pytest.fail(f"{label} timed out after {timeout}s")
 
 
 class TestGalaxySetup:
@@ -66,31 +94,7 @@ def workflow_result(gi, workflow_id):
     )
     invocation_id = invocation["id"]
 
-    deadline = time.time() + WORKFLOW_TIMEOUT
-    while time.time() < deadline:
-        inv = gi.invocations.show_invocation(invocation_id)
-        state = inv["state"]
-        if state == "scheduled":
-            datasets = gi.histories.show_history(history_id, contents=True)
-            if datasets and all(
-                ds["state"] in ("ok", "error", "deleted", "discarded")
-                for ds in datasets
-            ):
-                failed = [ds for ds in datasets if ds["state"] == "error"]
-                if failed:
-                    _dump_errors(gi, history_id)
-                    pytest.fail(
-                        f"{len(failed)} dataset(s) in error state: "
-                        f"{[d['name'] for d in failed]}"
-                    )
-                break
-        elif state in ("cancelled", "failed"):
-            _dump_errors(gi, history_id)
-            pytest.fail(f"Workflow invocation {state}")
-        time.sleep(POLL_INTERVAL)
-    else:
-        _dump_errors(gi, history_id)
-        pytest.fail("Workflow timed out")
+    _wait_for_workflow(gi, invocation_id, history_id, WORKFLOW_TIMEOUT, "Steady-thermal workflow")
 
     yield gi, history_id
 
@@ -113,17 +117,23 @@ def _dump_errors(gi, history_id):
                 print(f"  (could not fetch job details: {e})")
 
 
-def _download_dataset(gi, history_id, name_pattern):
+def _download_dataset(gi, history_id, name_pattern, occurrence=1):
+    """Download a dataset by name pattern. occurrence=N picks the Nth match (1-indexed)."""
     datasets = gi.histories.show_history(history_id, contents=True)
+    count = 0
     for ds in datasets:
         if re.search(name_pattern, ds["name"], re.IGNORECASE):
-            return gi.datasets.download_dataset(ds["id"])
+            count += 1
+            if count == occurrence:
+                return gi.datasets.download_dataset(ds["id"])
     available = [ds["name"] for ds in datasets]
-    pytest.fail(f"No dataset matching '{name_pattern}'. Available: {available}")
+    pytest.fail(
+        f"No dataset matching '{name_pattern}' (occurrence {occurrence}). Available: {available}"
+    )
 
 
-def _download_text(gi, history_id, name_pattern):
-    data = _download_dataset(gi, history_id, name_pattern)
+def _download_text(gi, history_id, name_pattern, occurrence=1):
+    data = _download_dataset(gi, history_id, name_pattern, occurrence=occurrence)
     return data.decode("utf-8", errors="replace")
 
 
@@ -220,7 +230,6 @@ class TestSteadyThermalWorkflow:
 
 
 TRANSIENT_WORKFLOW_TIMEOUT = 300
-TRANSIENT_POLL_INTERVAL = 10
 
 
 @pytest.fixture(scope="module")
@@ -236,31 +245,7 @@ def transient_workflow_result(gi, transient_workflow_id):
     )
     invocation_id = invocation["id"]
 
-    deadline = time.time() + TRANSIENT_WORKFLOW_TIMEOUT
-    while time.time() < deadline:
-        inv = gi.invocations.show_invocation(invocation_id)
-        state = inv["state"]
-        if state == "scheduled":
-            datasets = gi.histories.show_history(history_id, contents=True)
-            if datasets and all(
-                ds["state"] in ("ok", "error", "deleted", "discarded")
-                for ds in datasets
-            ):
-                failed = [ds for ds in datasets if ds["state"] == "error"]
-                if failed:
-                    _dump_errors(gi, history_id)
-                    pytest.fail(
-                        f"{len(failed)} dataset(s) in error state: "
-                        f"{[d['name'] for d in failed]}"
-                    )
-                break
-        elif state in ("cancelled", "failed"):
-            _dump_errors(gi, history_id)
-            pytest.fail(f"Workflow invocation {state}")
-        time.sleep(TRANSIENT_POLL_INTERVAL)
-    else:
-        _dump_errors(gi, history_id)
-        pytest.fail("Transient workflow timed out")
+    _wait_for_workflow(gi, invocation_id, history_id, TRANSIENT_WORKFLOW_TIMEOUT, "Transient thermal workflow")
 
     yield gi, history_id
 
@@ -454,3 +439,107 @@ class TestTransientThermalWorkflow:
         # BC nodes have prescribed temp, free nodes are NaN
         non_nan = [v for v in vals if v == v]
         assert len(non_nan) > 0, "No prescribed nodes in FixedFreedoms field"
+
+
+IC_CHAIN_TIMEOUT = 600
+
+
+@pytest.fixture(scope="module")
+def ic_chain_result(gi, ic_chain_workflow_id):
+    """Run the IC chain workflow once and return (gi, history_id) for all tests."""
+    history = gi.histories.create_history(name="test-ic-chain")
+    history_id = history["id"]
+
+    invocation = gi.workflows.invoke_workflow(
+        ic_chain_workflow_id,
+        history_id=history_id,
+        allow_tool_state_corrections=True,
+    )
+    invocation_id = invocation["id"]
+
+    _wait_for_workflow(gi, invocation_id, history_id, IC_CHAIN_TIMEOUT, "IC chain workflow")
+
+    yield gi, history_id
+
+    gi.histories.delete_history(history_id, purge=True)
+
+
+class TestICChainWorkflow:
+
+    def test_workflow_imported(self, gi, ic_chain_workflow_id):
+        wf = gi.workflows.show_workflow(ic_chain_workflow_id)
+        assert wf["name"] == "Transient IC Chain (ParaFEM)"
+
+    def test_workflow_has_correct_steps(self, gi, ic_chain_workflow_id):
+        wf = gi.workflows.show_workflow(ic_chain_workflow_id)
+        assert len(wf["steps"]) == 21, (
+            f"Expected 21 steps (16 params + 5 tools), got {len(wf['steps'])}"
+        )
+
+    def test_run1_no_nan(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        text = _download_text(gi, history_id, r"Results summary", occurrence=1)
+        assert "NaN" not in text
+
+    def test_run1_has_timestep_rows(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        text = _download_text(gi, history_id, r"Results summary", occurrence=1)
+        # nstep=10, npri=10: initial row + 1 output = 2 rows
+        rows = re.findall(r'^\s+([\d.E+\-]+)\s+([\d.E+\-]+)', text, re.MULTILINE)
+        assert len(rows) == 2, f"Expected 2 time output rows (t=0 + nstep/npri), got {len(rows)}"
+
+    def test_extracted_ic_has_correct_node_count(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        text = _download_text(gi, history_id, r"initial conditions")
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        # First line is node count, rest are values: (3+1)^3 = 64 nodes
+        node_count = int(lines[0])
+        assert node_count == 64, f"Expected 64 nodes (3x3x3 mesh), got {node_count}"
+        assert len(lines) - 1 == node_count, (
+            f"Node count mismatch: header says {node_count}, got {len(lines)-1} values"
+        )
+
+    def test_extracted_ic_values_in_range(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        text = _download_text(gi, history_id, r"initial conditions")
+        lines = [l for l in text.strip().split("\n") if l.strip()]
+        values = [float(l) for l in lines[1:]]
+        assert all(not (v != v) for v in values), "NaN in extracted IC values"
+        assert all(285 <= v <= 510 for v in values), (
+            f"IC values outside expected BC range: min={min(values):.1f}, max={max(values):.1f}"
+        )
+
+    def test_run2_no_nan(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        text = _download_text(gi, history_id, r"Results summary", occurrence=2)
+        assert "NaN" not in text
+
+    def test_run2_starts_from_run1_final_state(self, ic_chain_result):
+        """Run 2's initial temperature (t=0 row) should match run 1's final temperature."""
+        gi, history_id = ic_chain_result
+        run1_text = _download_text(gi, history_id, r"Results summary", occurrence=1)
+        run2_text = _download_text(gi, history_id, r"Results summary", occurrence=2)
+
+        run1_rows = re.findall(r'^\s+([\d.E+\-]+)\s+([\d.E+\-]+)', run1_text, re.MULTILINE)
+        run2_rows = re.findall(r'^\s+([\d.E+\-]+)\s+([\d.E+\-]+)', run2_text, re.MULTILINE)
+
+        assert run1_rows, "No data rows in run 1 .res"
+        assert run2_rows, "No data rows in run 2 .res"
+
+        run1_final_temp = float(run1_rows[-1][1])
+        run2_initial_temp = float(run2_rows[0][1])
+
+        assert run2_initial_temp == pytest.approx(run1_final_temp, rel=1e-4), (
+            f"Run 2 initial temp ({run2_initial_temp:.4f}K) does not match "
+            f"Run 1 final temp ({run1_final_temp:.4f}K) — IC extraction may have failed"
+        )
+
+    def test_run2_ensi_has_ndttr(self, ic_chain_result):
+        gi, history_id = ic_chain_result
+        # Pattern anchored with $ to avoid matching "EnSight output … initial conditions (.ini)"
+        raw = _download_dataset(gi, history_id, r"EnSight output \(\.ensi\.tar\.gz\)$", occurrence=2)
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        names = tf.getnames()
+        tf.close()
+        ndttr = [n for n in names if "NDTTR" in n]
+        assert len(ndttr) > 0, f"No NDTTR files in run 2 output: {names}"
