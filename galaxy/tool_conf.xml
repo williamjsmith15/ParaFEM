@@ -6,6 +6,7 @@
         <tool file="tools/gdps_meshgen_box/gdps_meshgen_box.xml" />
         <tool file="tools/gdps_bc_thermal/gdps_bc_thermal.xml" />
         <tool file="tools/gdps_bc_transient/gdps_bc_transient.xml" />
+        <tool file="tools/gdps_extract_ic/gdps_extract_ic.xml" />
     </section>
     <section id="gdps_solvers" name="GDPS Solvers">
         <tool file="tools/gdps_steady_thermal/gdps_steady_thermal.xml" />
