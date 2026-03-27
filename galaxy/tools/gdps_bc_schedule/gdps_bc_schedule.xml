@@ -1,0 +1,80 @@
+<tool id="gdps_bc_schedule" name="ParaFEM BC Schedule Generator" version="0.1.0">
+    <description>Generate a time-varying boundary condition schedule (.bcs)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-bcgen:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python3 '$__tool_directory__/gdps_bc_schedule.py'
+            --mesh_d '$mesh_d'
+            --schedule_config '$schedule_config_file'
+            --bc_mode '$bc_mode.mode'
+            #if str($bc_mode.mode) == "nset":
+                --nset_file '$bc_mode.nset_file'
+            #else:
+                --bc_axis '$bc_mode.bc_axis'
+            #end if
+            --output_bcs '$output_bcs'
+    ]]></command>
+
+    <configfiles>
+        <configfile name="schedule_config_file">${schedule_config}</configfile>
+    </configfiles>
+
+    <inputs>
+        <param type="data" name="mesh_d" label="Mesh geometry (.d)"
+               help="ParaFEM .d file from mesh generator or mesh import tool" />
+        <param type="text" name="schedule_config" label="BC Schedule Configuration (JSON)"
+               area="true"
+               value='[
+  {"step": 50, "zones": [{"axis_min": 0.0, "axis_max": 0.1, "temperature": 600.0},
+                           {"axis_min": 0.9, "axis_max": 1.0, "temperature": 293.0}]},
+  {"step": 100, "zones": [{"axis_min": 0.0, "axis_max": 0.1, "temperature": 700.0},
+                            {"axis_min": 0.9, "axis_max": 1.0, "temperature": 293.0}]}
+]'
+               help="JSON array of schedule entries. Each entry has 'step' and 'zones'.">
+            <sanitizer>
+                <valid initial="string.printable"/>
+            </sanitizer>
+        </param>
+        <conditional name="bc_mode">
+            <param name="mode" type="select" label="BC assignment mode">
+                <option value="zone" selected="true">Geometric Zones (Automatic)</option>
+                <option value="nset">Node Sets (NSETs from external mesh)</option>
+            </param>
+            <when value="zone">
+                <param type="select" name="bc_axis" label="Zone axis">
+                    <option value="x">X axis</option>
+                    <option value="y">Y axis</option>
+                    <option value="z" selected="true">Z axis</option>
+                </param>
+            </when>
+            <when value="nset">
+                <param type="data" name="nset_file" format="txt" label="Node sets (.nset)"
+                       help="Input .nset file from ParaFEM Mesh Import tool" />
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_bcs" label="BC schedule (.bcs)" />
+    </outputs>
+
+    <help>
+Generates a ParaFEM time-varying boundary condition schedule (.bcs) file.
+
+This tool reads a mesh `.d` file and a JSON configuration defining temperature
+changes at specific time steps. The output `.bcs` file can be used by solvers
+that support BC scheduling, like the GDPS Transient Thermal Solver.
+
+Schedule Configuration is a JSON array where each entry contains:
+- step: The time step index at which the BCs should be updated.
+- zones: An array of zone definitions, identical to the format used by the
+  static BC generator tools (either axis-based or NSET-based).
+
+The tool re-calculates the full set of fixed nodes for each time step in the
+schedule to ensure the node ordering in the `.bcs` file is consistent with
+the static `.fix` file required by the solver.
+    </help>
+</tool>

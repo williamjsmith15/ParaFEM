@@ -52,3 +52,8 @@ def small_transient_mat():
 @pytest.fixture
 def small_transient_long_dat():
     return os.path.join(FIXTURES_DIR, 'small_2x2x2_transient_long.dat')
+
+
+@pytest.fixture
+def small_nset():
+    return os.path.join(FIXTURES_DIR, 'small_2x2x2_import.nset')

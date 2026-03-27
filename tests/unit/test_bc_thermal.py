@@ -5,8 +5,9 @@ import sys
 import tempfile
 import pytest
 
-# Add the tool directory to path so we can import
+# Add tool dirs to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'galaxy', 'tools', 'gdps_bc_thermal'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'galaxy', 'tools'))
 
 from gdps_bc_thermal import (
     parse_d_file,
@@ -16,6 +17,7 @@ from gdps_bc_thermal import (
     write_fix,
     write_dat,
 )
+from parafem_common import parse_nset_file, assign_nset_bc
 
 
 class TestParseDFile:
@@ -181,3 +183,93 @@ class TestWriteBnd:
                 assert line.split()[1] == '0'
         finally:
             os.unlink(path)
+
+
+class TestParseNsetFile:
+
+    def test_parses_nset_names(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        assert 'UPSTREAM' in nsets
+        assert 'DOWNSTREAM' in nsets
+
+    def test_nset_count(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        assert len(nsets) == 2
+
+    def test_nset_node_counts(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        assert len(nsets['UPSTREAM']) == 9
+        assert len(nsets['DOWNSTREAM']) == 9
+
+    def test_upstream_node_ids(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        assert nsets['UPSTREAM'] == {1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+    def test_downstream_node_ids(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        assert nsets['DOWNSTREAM'] == {19, 20, 21, 22, 23, 24, 25, 26, 27}
+
+    def test_returns_sets_not_lists(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        for name, nodes in nsets.items():
+            assert isinstance(nodes, set), f"NSET '{name}' should be a set"
+
+    def test_empty_file_returns_empty_dict(self, tmp_path):
+        empty = tmp_path / "empty.nset"
+        empty.write_text("")
+        assert parse_nset_file(str(empty)) == {}
+
+    def test_single_nset(self, tmp_path):
+        content = "'none'\n1\n*NSET 3 MYFACE\n5\n10\n15\n"
+        f = tmp_path / "single.nset"
+        f.write_text(content)
+        nsets = parse_nset_file(str(f))
+        assert 'MYFACE' in nsets
+        assert nsets['MYFACE'] == {5, 10, 15}
+
+
+class TestAssignNsetBc:
+
+    def test_assigns_values_to_nodes(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        zones = [
+            {'nset_name': 'UPSTREAM', 'temperature': 800.0},
+            {'nset_name': 'DOWNSTREAM', 'temperature': 300.0},
+        ]
+        fixed = assign_nset_bc(nsets, zones)
+        assert len(fixed) == 18
+        assert all(fixed[nid] == 800.0 for nid in range(1, 10))
+        assert all(fixed[nid] == 300.0 for nid in range(19, 28))
+
+    def test_missing_nset_skipped(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        zones = [{'nset_name': 'NONEXISTENT', 'temperature': 500.0}]
+        fixed = assign_nset_bc(nsets, zones)
+        assert fixed == {}
+
+    def test_partial_nset_assignment(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        zones = [{'nset_name': 'UPSTREAM', 'temperature': 900.0}]
+        fixed = assign_nset_bc(nsets, zones)
+        assert len(fixed) == 9
+        assert all(v == 900.0 for v in fixed.values())
+
+    def test_custom_value_key(self, small_nset):
+        nsets = parse_nset_file(small_nset)
+        zones = [{'nset_name': 'DOWNSTREAM', 'concentration': 0.5}]
+        fixed = assign_nset_bc(nsets, zones, temp_key='concentration')
+        assert len(fixed) == 9
+        assert all(v == 0.5 for v in fixed.values())
+
+    def test_later_zone_overwrites_earlier(self, small_nset):
+        # If two zones reference the same nodes, the last one wins
+        nsets = parse_nset_file(small_nset)
+        # Add a zone with all UPSTREAM nodes under a different name
+        nsets['ALL_UPSTREAM'] = nsets['UPSTREAM'].copy()
+        zones = [
+            {'nset_name': 'UPSTREAM', 'temperature': 100.0},
+            {'nset_name': 'ALL_UPSTREAM', 'temperature': 999.0},
+        ]
+        fixed = assign_nset_bc(nsets, zones)
+        # ALL_UPSTREAM overwrites UPSTREAM for the same node IDs
+        assert all(fixed[nid] == 999.0 for nid in nsets['UPSTREAM'])

@@ -1,0 +1,93 @@
+<tool id="gdps_sensor_to_bcs" name="ParaFEM Sensor to BC Schedule" version="0.1.0">
+    <description>Convert InfluxDB sensor CSV to time-varying BC schedule (.bcs)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-bcgen:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python3 '$__tool_directory__/gdps_sensor_to_bcs.py'
+            --mesh_d '$mesh_d'
+            --sensor_csv '$sensor_csv'
+            --zone_template '$zone_file'
+            --bc_mode '$bc_mode.mode'
+            #if str($bc_mode.mode) == "nset":
+                --nset_file '$bc_mode.nset_file'
+            #else:
+                --bc_axis '$bc_mode.bc_axis'
+            #end if
+            --dtim '$dtim'
+            --output_bcs '$output_bcs'
+    ]]></command>
+
+    <configfiles>
+        <configfile name="zone_file">${zone_template}</configfile>
+    </configfiles>
+
+    <inputs>
+        <param type="data" name="mesh_d" label="Mesh geometry (.d)"
+               help="ParaFEM .d file from mesh generator or mesh import tool" />
+        <param type="data" name="sensor_csv" format="csv,txt" label="Sensor readings CSV"
+               help="CSV from InfluxDB with elapsed_seconds column and temperature columns" />
+        <param type="text" name="zone_template" label="Zone Template (JSON)"
+               area="true"
+               value='[
+  {"col_name": "upstream_temp", "axis_min": 0.0, "axis_max": 0.1},
+  {"col_name": "downstream_temp", "axis_min": 0.9, "axis_max": 1.0}
+]'
+               help="JSON array mapping CSV column names to mesh zones (axis-based or NSET-based).">
+            <sanitizer>
+                <valid initial="string.printable"/>
+            </sanitizer>
+        </param>
+        <param type="float" name="dtim" value="1.0" label="Time step size (seconds)"
+               help="Divides elapsed_seconds to compute the step index" />
+        <conditional name="bc_mode">
+            <param name="mode" type="select" label="BC assignment mode">
+                <option value="zone" selected="true">Geometric Zones (Automatic)</option>
+                <option value="nset">Node Sets (NSETs from external mesh)</option>
+            </param>
+            <when value="zone">
+                <param type="select" name="bc_axis" label="Zone axis">
+                    <option value="x">X axis</option>
+                    <option value="y">Y axis</option>
+                    <option value="z" selected="true">Z axis</option>
+                </param>
+            </when>
+            <when value="nset">
+                <param type="data" name="nset_file" format="txt" label="Node sets (.nset)"
+                       help="Input .nset file from ParaFEM Mesh Import tool" />
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_bcs" label="BC schedule from sensor (.bcs)" />
+    </outputs>
+
+    <help>
+Converts an InfluxDB sensor CSV file into a ParaFEM time-varying boundary
+condition schedule (.bcs) file.
+
+The CSV must contain an ``elapsed_seconds`` column and one or more temperature
+columns. Each row is mapped to a simulation time step using:
+``step = round(elapsed_seconds / dtim)``. Rows with step == 0 are skipped.
+
+The Zone Template is a JSON array where each entry maps a CSV column to a mesh
+zone. For axis-based zones::
+
+  [
+    {"col_name": "upstream_temp", "axis_min": 0.0, "axis_max": 0.1},
+    {"col_name": "downstream_temp", "axis_min": 0.9, "axis_max": 1.0}
+  ]
+
+For NSET-based zones::
+
+  [
+    {"col_name": "upstream_temp", "nset_name": "UPSTREAM_FACE"},
+    {"col_name": "downstream_temp", "nset_name": "DOWNSTREAM_FACE"}
+  ]
+
+The output `.bcs` file can be used by the GDPS Transient Thermal Solver.
+    </help>
+</tool>

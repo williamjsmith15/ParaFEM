@@ -13,7 +13,12 @@
             --tol $tol
             --limit $limit
             --zone_config '$zone_file'
-            --bc_axis '$bc_axis'
+            --bc_mode '$bc_mode.mode'
+            #if str($bc_mode.mode) == "nset":
+                --nset_file '$bc_mode.nset_file'
+            #else:
+                --bc_axis '$bc_mode.bc_axis'
+            #end if
             --output_d '$output_d'
             --output_bnd '$output_bnd'
             --output_fix '$output_fix'
@@ -37,14 +42,30 @@
                help="PCG convergence tolerance" />
         <param type="integer" name="limit" label="Max iterations" value="2000"
                help="Maximum PCG solver iterations" />
-        <param type="text" name="zone_config" label="Zone configuration (JSON)"
+        <param type="text" name="zone_config" label="BC Configuration (JSON)"
                value='[{"axis_min": 0.0, "axis_max": 0.3, "temperature": 800.0}, {"axis_min": 0.3, "axis_max": 0.7, "temperature": 1000.0}, {"axis_min": 0.7, "axis_max": 1.0, "temperature": 800.0}]'
-               help="JSON array of heater zones. Each zone: axis_min, axis_max (normalized 0.0-1.0 along axis), temperature (K). 0.0 = mesh start, 1.0 = mesh end." />
-        <param type="select" name="bc_axis" label="Zone axis">
-            <option value="x">X axis</option>
-            <option value="y">Y axis</option>
-            <option value="z" selected="true">Z axis</option>
+               help="In 'zone' mode: JSON array of zones with axis_min, axis_max (0-1), and temperature. In 'nset' mode: JSON array with nset_name and temperature.">
+            <sanitizer>
+                <valid initial="string.printable"/>
+            </sanitizer>
         </param>
+        <conditional name="bc_mode">
+            <param name="mode" type="select" label="BC assignment mode">
+                <option value="zone" selected="true">Geometric Zones (Automatic)</option>
+                <option value="nset">Node Sets (NSETs from external mesh)</option>
+            </param>
+            <when value="zone">
+                <param type="select" name="bc_axis" label="Zone axis">
+                    <option value="x">X axis</option>
+                    <option value="y">Y axis</option>
+                    <option value="z" selected="true">Z axis</option>
+                </param>
+            </when>
+            <when value="nset">
+                <param type="data" name="nset_file" format="txt" label="Node sets (.nset)"
+                       help="Input .nset file from ParaFEM Mesh Import tool" />
+            </when>
+        </conditional>
     </inputs>
 
     <outputs>

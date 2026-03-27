@@ -1,0 +1,6 @@
+FROM python:3.11-slim
+
+RUN pip install --no-cache-dir meshio[all] h5py
+
+WORKDIR /data
+ENTRYPOINT ["python"]

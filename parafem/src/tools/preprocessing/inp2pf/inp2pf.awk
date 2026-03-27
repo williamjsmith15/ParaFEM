@@ -100,6 +100,10 @@ BEGIN {
   dat_file = base_filename ".dat";
   lab_file = base_filename ".lab";
 
+  # Use a safe base for temp files (no paths)
+  n_path_parts = split(base_filename, path_parts, "/");
+  safe_base = path_parts[n_path_parts];
+
   # report filenames
   print "Abaqus Input Deck:", abq_file > "/dev/stderr";
   print "Output model file:", d_file > "/dev/stderr";
@@ -163,17 +167,11 @@ END {
     
     # export NSET files
     print node_set_count, "NSETS defined:" > "/dev/stderr";
-    if( node_set_count == 6 ) {
-	print "Assuming nset problem type of 'kubc' as there are SIX nsets defined" > "/dev/stderr";
-	print "'kubc'" > nset_file;
-    } else {
-	print "Assuming nset problem type of 'none'" > "/dev/stderr";
-	print "'none'" > nset_file;
-    }
+    print "'none'" > nset_file;
     print node_set_count > nset_file;
     # export each nset in turn
     for( ns=0; ns<node_set_count; ns++ ) {
-	tmp_nset_file = "tmp." ns "." base_filename ".nset";
+	tmp_nset_file = "tmp." ns "." safe_base ".nset";
 	nsnn = 0; # reset node count for this set
 	for( name in node_sets ) {
 	    if( node_sets[name] == ns ) {

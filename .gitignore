@@ -35,6 +35,9 @@
 # AI Ignore
 CLAUDE.md
 .claude/
+GEMINI.md
+.gemini/
+.geminiignore
 
 # Python
 __pycache__/

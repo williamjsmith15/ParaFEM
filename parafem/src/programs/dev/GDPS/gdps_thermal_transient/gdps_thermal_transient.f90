@@ -1,0 +1,336 @@
+PROGRAM gdps_thermal_transient
+!-------------------------------------------------------------------------
+!     GDPS transient thermal solver — based on p124 with correct
+!     Dirichlet BC enforcement for non-zero prescribed temperatures.
+!
+!     Fix vs p124: the r_pp override block that zeroed the residual at
+!     BC nodes has been removed, allowing PCG to converge to the correct
+!     prescribed values. BC nodes are also explicitly set after PCG.
+!
+!     Three dimensional transient analysis of heat conduction equation
+!     using 8-node hexahedral elements; parallel PCG version.
+!     Implicit; integration in time using 'theta' method.
+!-------------------------------------------------------------------------
+!USE mpi_wrapper  !remove comment for serial compilation
+ USE precision; USE global_variables; USE mp_interface; USE input
+ USE output; USE loading; USE timing; USE maths; USE gather_scatter
+ USE geometry; USE new_library; IMPLICIT NONE
+!neq,ntot are now global variables - not declared
+ INTEGER, PARAMETER::ndim=3,nodof=1,nprops=5
+ INTEGER::nod,nn,nr,nip,i,j,k,l,iters,limit,iel,nstep,npri,nres,it,prog, &
+   nlen,node_end,node_start,nodes_pp,loaded_freedoms,fixed_freedoms,is,  &
+   fixed_freedoms_pp,fixed_freedoms_start,loaded_freedoms_pp,np_types,   &
+   loaded_freedoms_start,nels,ndof,npes_pp,meshgen,partitioner,tz,      &
+   ic_mode,j_chk,ier_mpi,n_sched,m,sched_match,node_tmp,sense_tmp
+ REAL(iwp)::kx,ky,kz,det,theta,dtim,real_time,tol,alpha,beta,up,big,q,   &
+   rho,cp,val0
+ REAL(iwp),PARAMETER::zero=0.0_iwp,penalty=1.e20_iwp,t0=0.0_iwp
+ CHARACTER(LEN=15)::element; CHARACTER(LEN=50)::argv,fname
+ CHARACTER(LEN=100)::ic_file
+ CHARACTER(LEN=6)::ch; LOGICAL::converged=.false.,ctrl_exists,bcs_exists
+ REAL(iwp),ALLOCATABLE::loads_pp(:),u_pp(:),p_pp(:),points(:,:),kay(:,:),&
+   fun(:),jac(:,:),der(:,:),deriv(:,:),weights(:),d_pp(:),col(:,:),      &
+   kc(:,:),pm(:,:),funny(:,:),storka_pp(:,:,:),row(:,:),prop(:,:),       &
+   storkb_pp(:,:,:),x_pp(:),xnew_pp(:),pmul_pp(:,:),utemp_pp(:,:),       &
+   diag_precon_pp(:),diag_precon_tmp(:,:),g_coord_pp(:,:,:),timest(:),   &
+   ttr_pp(:),eld_pp(:,:),val(:,:),val_f(:),store_pp(:),r_pp(:),          &
+   kcx(:,:),kcy(:,:),kcz(:,:),eld(:),sched_vals(:,:)
+ INTEGER,ALLOCATABLE::rest(:,:),g_num_pp(:,:),g_g_pp(:,:),no(:),         &
+   no_pp(:),no_f_pp(:),no_pp_temp(:),sense(:),node(:),etype_pp(:),       &
+   sched_steps(:)
+!--------------------------input and initialisation-----------------------
+ ALLOCATE(timest(20)); timest=zero; timest(1)=elap_time()
+ CALL find_pe_procs(numpe,npes); CALL getname(argv,nlen)
+ CALL read_p124(argv,numpe,dtim,element,fixed_freedoms,limit,            &
+   loaded_freedoms,meshgen,nels,nip,nn,nod,npri,nr,nres,nstep,           &
+   partitioner,theta,tol,np_types,val0)
+
+ ic_mode = 1; ic_file = ""; j_chk = 0
+ IF(numpe==1) THEN
+   fname = argv(1:nlen)//".ctrl"
+   INQUIRE(FILE=fname, EXIST=ctrl_exists)
+   IF(ctrl_exists) THEN
+     OPEN(20,FILE=fname,STATUS="OLD",ACTION="READ")
+     READ(20,*) ic_mode
+     IF(ic_mode > 1) READ(20,*) ic_file
+     CLOSE(20)
+   END IF
+ END IF
+ CALL MPI_BCAST(ic_mode,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+ IF(ic_mode > 1) CALL MPI_BCAST(ic_file,100,MPI_CHARACTER,0,MPI_COMM_WORLD,ier_mpi)
+
+ n_sched = 0
+ IF(numpe==1) THEN
+   fname = argv(1:nlen)//".bcs"
+   INQUIRE(FILE=fname, EXIST=bcs_exists)
+   IF(bcs_exists) THEN
+     OPEN(21,FILE=fname,STATUS="OLD",ACTION="READ")
+     DO
+       READ(21,*,END=10) k
+       n_sched = n_sched + 1
+       DO i=1,fixed_freedoms
+         READ(21,*)
+       END DO
+     END DO
+10   REWIND(21)
+     IF(n_sched > 0) THEN
+       ALLOCATE(sched_steps(n_sched), sched_vals(fixed_freedoms, n_sched))
+       DO i=1,n_sched
+         READ(21,*) sched_steps(i)
+         DO k=1,fixed_freedoms
+           READ(21,*) node_tmp, sense_tmp, sched_vals(k, i)
+         END DO
+       END DO
+     END IF
+     CLOSE(21)
+   END IF
+ END IF
+
+ CALL MPI_BCAST(n_sched,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+ IF(n_sched > 0) THEN
+    IF(numpe > 1) ALLOCATE(sched_steps(n_sched), sched_vals(fixed_freedoms, n_sched))
+    CALL MPI_BCAST(sched_steps,n_sched,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+    CALL MPI_BCAST(sched_vals,fixed_freedoms*n_sched,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ier_mpi)
+ END IF
+
+ CALL calc_nels_pp(argv,nels,npes,numpe,partitioner,nels_pp)
+ ndof=nod*nodof; ntot=ndof
+ ALLOCATE(g_num_pp(nod,nels_pp),g_coord_pp(nod,ndim,nels_pp),            &
+   etype_pp(nels_pp),prop(nprops,np_types))
+ g_num_pp=0; g_coord_pp=zero; etype_pp=0; prop=zero
+ IF (nr>0) THEN; ALLOCATE(rest(nr,nodof+1)); rest=0; END IF
+ CALL read_elements(argv,iel_start,nn,npes,numpe,etype_pp,g_num_pp)
+ IF(meshgen==2) CALL abaqus2sg(element,g_num_pp)
+ CALL read_g_coord_pp(argv,g_num_pp,nn,npes,numpe,g_coord_pp)
+ IF (nr>0) CALL read_rest(argv,numpe,rest)
+ CALL read_material(argv,prop,numpe,npes)
+ ALLOCATE (points(nip,ndim),weights(nip),kay(ndim,ndim),fun(nod),        &
+   jac(ndim,ndim),der(ndim,nod),deriv(ndim,nod),pm(ntot,ntot),           &
+   kc(ntot,ntot),funny(1,nod),g_g_pp(ntot,nels_pp),                      &
+   storka_pp(ntot,ntot,nels_pp),eld(ntot),col(ntot,1),row(1,ntot),       &
+   utemp_pp(ntot,nels_pp),storkb_pp(ntot,ntot,nels_pp),                  &
+   pmul_pp(ntot,nels_pp),kcx(ntot,ntot),kcy(ntot,ntot),kcz(ntot,ntot))
+!----------  find the steering array and equations per process -----------
+ timest(2)=elap_time(); g_g_pp=g_num_pp; neq=nn; CALL calc_neq_pp
+ CALL calc_npes_pp(npes,npes_pp); CALL make_ggl(npes_pp,npes,g_g_pp)
+ DO i=1,neq_pp;IF(nres==ieq_start+i-1)THEN;it=numpe;is=i;END IF;END DO
+ IF(numpe==it)THEN
+   OPEN(11,FILE=argv(1:nlen)//'.res',STATUS='REPLACE',ACTION='WRITE')
+   WRITE(11,'(A,I5,A)')"This job ran on ", npes,"  processes"
+   WRITE(11,'(A,3(I12,A))')"There are ",nn," nodes",nr,                   &
+     " restrained and   ",neq," equations"
+   WRITE(11,'(A,F10.4)')"Time after setup is ",elap_time()-timest(1)
+ END IF
+ ALLOCATE(loads_pp(neq_pp),diag_precon_pp(neq_pp),u_pp(neq_pp),          &
+   d_pp(neq_pp),p_pp(neq_pp),x_pp(neq_pp),xnew_pp(neq_pp),r_pp(neq_pp))
+ loads_pp=zero; diag_precon_pp=zero; u_pp=zero; r_pp=zero; d_pp=zero
+ p_pp=zero; x_pp=zero; xnew_pp=zero
+!-------------- element stiffness integration and storage ----------------
+ CALL sample(element,points,weights); storka_pp=zero; storkb_pp=zero
+ elements_3: DO iel=1,nels_pp
+   kay=zero; kc=zero; pm=zero; kay(1,1)=prop(1,etype_pp(iel))
+   kay(2,2)=prop(2,etype_pp(iel)); kay(3,3)=prop(3,etype_pp(iel))
+   rho=prop(4,etype_pp(iel)); cp=prop(5,etype_pp(iel))
+   gauss_pts: DO i=1,nip
+     CALL shape_der(der,points,i); CALL shape_fun(fun,points,i)
+     funny(1,:)=fun(:); jac=MATMUL(der,g_coord_pp(:,:,iel))
+     det=determinant(jac); CALL invert(jac); deriv=MATMUL(jac,der)
+     kc=kc+MATMUL(MATMUL(TRANSPOSE(deriv),kay),deriv)*det*weights(i)
+     pm=pm+MATMUL(TRANSPOSE(funny),funny)*det*weights(i)*rho*cp
+   END DO gauss_pts
+   storka_pp(:,:,iel)=pm+kc*theta*dtim
+   storkb_pp(:,:,iel)=pm-kc*(1._iwp-theta)*dtim
+ END DO elements_3
+!------------------ build the diagonal preconditioner --------------------
+ ALLOCATE(diag_precon_tmp(ntot,nels_pp)); diag_precon_tmp = zero
+ elements_4: DO iel = 1,nels_pp
+   DO k=1,ntot
+     diag_precon_tmp(k,iel)=diag_precon_tmp(k,iel)+storka_pp(k,k,iel)
+   END DO
+ END DO elements_4; CALL scatter(diag_precon_pp,diag_precon_tmp)
+ DEALLOCATE(diag_precon_tmp)
+!------------- read in fixed freedoms and assign to equations ------------
+ IF(fixed_freedoms > 0) THEN
+   ALLOCATE(node(fixed_freedoms),no_pp_temp(fixed_freedoms),             &
+     no(fixed_freedoms),sense(fixed_freedoms),val_f(fixed_freedoms))
+   node=0; no=0; no_pp_temp=0; sense=0; val_f = zero
+   CALL read_fixed(argv,numpe,node,sense,val_f)
+   CALL find_no2(g_g_pp,g_num_pp,node,sense,no)
+   CALL reindex(ieq_start,no,no_pp_temp,fixed_freedoms_pp,               &
+     fixed_freedoms_start,neq_pp)
+   ALLOCATE(no_f_pp(fixed_freedoms_pp),store_pp(fixed_freedoms_pp))
+   no_f_pp=0; store_pp=zero; no_f_pp=no_pp_temp(1:fixed_freedoms_pp)
+   DEALLOCATE(node,no,sense,no_pp_temp)
+ END IF
+ IF(fixed_freedoms==0) fixed_freedoms_pp=0
+!-------------------------- invert preconditioner ------------------------
+ IF(fixed_freedoms_pp > 0) THEN
+   DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+     diag_precon_pp(l)=diag_precon_pp(l)+penalty
+     store_pp(i)=diag_precon_pp(l)
+   END DO
+ END IF; diag_precon_pp=1._iwp/diag_precon_pp
+!--------------- read in loaded nodes and get starting r_pp --------------
+ IF(loaded_freedoms>0) THEN
+   ALLOCATE(node(loaded_freedoms),val(nodof,loaded_freedoms),            &
+     no_pp_temp(loaded_freedoms)); val=zero; node=0; no_pp_temp=0
+   CALL read_loads(argv,numpe,node,val)
+   CALL reindex(ieq_start,node,no_pp_temp,loaded_freedoms_pp,            &
+     loaded_freedoms_start,neq_pp); ALLOCATE(no_pp(loaded_freedoms_pp))
+   no_pp=0; no_pp=no_pp_temp(1:loaded_freedoms_pp)
+   DEALLOCATE(no_pp_temp,node)
+ END IF
+ IF(loaded_freedoms==0) loaded_freedoms_pp=0
+!------------------------- start time stepping loop ----------------------
+ CALL calc_nodes_pp(nn,npes,numpe,node_end,node_start,nodes_pp)
+ ALLOCATE(ttr_pp(nodes_pp),eld_pp(ntot,nels_pp))
+ ttr_pp=zero; eld_pp=zero
+ IF(numpe==it)                                                           &
+   WRITE(11,'(A)') "  Time       Temperature  Iterations "
+ IF(numpe==1) THEN
+   OPEN(13, file=argv(1:nlen)//'.npp', status='replace', action='write')
+   WRITE(13,*) nn; WRITE(13,*) nstep/npri; WRITE(13,*) npes
+ END IF
+
+ ! Initialize xnew_pp (solution at start of loop) based on ic_mode
+ xnew_pp = zero
+ IF(ic_mode == 3) THEN
+   CALL read_x_pp(argv,npes,numpe,j_chk,xnew_pp)
+ ELSE IF(ic_mode == 2) THEN
+   OPEN(20,FILE=ic_file,STATUS="OLD",ACTION="READ")
+   READ(20,*) k
+   IF(k /= nn) THEN
+     IF(numpe==1) PRINT*,"Error: IC file node count mismatch", k, nn
+     CALL SHUTDOWN()
+   END IF
+   DO i=1,ieq_start-1
+     READ(20,*)
+   END DO
+   DO i=1,neq_pp
+     READ(20,*) xnew_pp(i)
+   END DO
+   CLOSE(20)
+ ELSE
+   xnew_pp = val0
+ END IF
+
+ ! Enforce fixed temperatures on initial state
+ IF(fixed_freedoms_pp>0) THEN
+   DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+     k=fixed_freedoms_start+i-1; xnew_pp(l)=val_f(k)
+   END DO
+ END IF
+
+ ! Output initial state at t=j_chk*dtim
+ IF(j_chk == 0) THEN
+   real_time = 0.0_iwp
+ ELSE
+   real_time = j_chk * dtim
+ END IF
+
+ IF(numpe==it) WRITE(11,'(2e12.4)') real_time, xnew_pp(is)
+
+ IF(numpe==1)THEN; WRITE(ch,'(I6.6)') j_chk
+   OPEN(12,file=argv(1:nlen)//".ensi.NDTTR-"//ch,status='replace',  &
+     action='write')
+   WRITE(12,'(A)')                                                  &
+     "Alya Ensight Gold --- Scalar per-node variable file"
+   WRITE(12,'(A/A/A)') "part", "    1","coordinates"
+ END IF
+ eld_pp=zero; ttr_pp=zero; CALL gather(xnew_pp(1:),eld_pp)
+ CALL scatter_nodes(npes,nn,nels_pp,g_num_pp,nod,nodof,nodes_pp,    &
+   node_start,node_end,eld_pp,ttr_pp,1)
+ CALL dismsh_ensi_p(12,1,nodes_pp,npes,numpe,1,ttr_pp)
+ IF(numpe==1) CLOSE(12)
+
+ timesteps: DO j=j_chk+1,nstep
+    IF(n_sched > 0) THEN
+      DO m=1,n_sched
+        IF(sched_steps(m) == j) THEN
+          val_f = sched_vals(:, m)
+          EXIT
+        END IF
+      END DO
+    END IF
+    real_time=j*dtim; timest(3)=elap_time(); loads_pp=zero
+!---- apply loads (sources and/or sinks) supplied as a boundary value ----
+    IF(loaded_freedoms_pp>0) THEN
+      DO i=1,loaded_freedoms_pp; k=no_pp(i)-ieq_start+1
+        loads_pp(k)=val(loaded_freedoms_start+i-1,1)*dtim
+      END DO;  q=q+SUM_P(loads_pp)
+    END IF
+!- compute RHS of time stepping equation, using storkb_pp, add to loads --
+    u_pp=zero; pmul_pp=zero; utemp_pp=zero
+    CALL gather(xnew_pp,pmul_pp)
+    elements_2a: DO iel=1,nels_pp
+      utemp_pp(:,iel)=MATMUL(storkb_pp(:,:,iel),pmul_pp(:,iel))
+    END DO elements_2a; CALL scatter(u_pp,utemp_pp)
+    IF(fixed_freedoms_pp>0) THEN
+      DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+        k=fixed_freedoms_start+i-1; u_pp(l)=store_pp(i)*val_f(k)
+      END DO
+    END IF; loads_pp=loads_pp+u_pp
+!--- set up PCG: r = loads - A*x, with x=0 as initial guess ------
+    r_pp=zero; pmul_pp=zero; utemp_pp=zero; x_pp=zero
+    CALL gather(x_pp,pmul_pp)
+    elements_2b: DO iel=1,nels_pp
+      utemp_pp(:,iel)=MATMUL(storka_pp(:,:,iel),pmul_pp(:,iel))
+    END DO elements_2b; CALL scatter(r_pp,utemp_pp)
+    r_pp=loads_pp-r_pp; d_pp=diag_precon_pp*r_pp; p_pp=d_pp; iters=0
+!---------------- solve simultaneous equations by pcg --------------------
+    iterations: DO
+      iters=iters+1; u_pp=zero; pmul_pp=zero; utemp_pp=zero
+      CALL gather(p_pp,pmul_pp)
+      elements_6: DO iel=1,nels_pp
+        utemp_pp(:,iel)=MATMUL(storka_pp(:,:,iel),pmul_pp(:,iel))
+      END DO elements_6; CALL scatter(u_pp,utemp_pp)
+      IF(fixed_freedoms_pp>0) THEN; DO i=1,fixed_freedoms_pp
+          l=no_f_pp(i)-ieq_start+1; u_pp(l)=p_pp(l)*store_pp(i)
+      END DO; END IF
+      up=DOT_PRODUCT_P(r_pp,d_pp); alpha=up/DOT_PRODUCT_P(p_pp,u_pp)
+      xnew_pp=x_pp+p_pp*alpha; r_pp=r_pp-u_pp*alpha
+      d_pp=diag_precon_pp*r_pp; beta=DOT_PRODUCT_P(r_pp,d_pp)/up
+      p_pp=d_pp+p_pp*beta; CALL checon_par(xnew_pp,tol,converged,x_pp)
+      IF(converged.OR.iters==limit)EXIT
+    END DO iterations
+!--- explicitly enforce prescribed BC values after PCG -------------------
+    IF(fixed_freedoms_pp>0) THEN
+      DO i=1,fixed_freedoms_pp; l=no_f_pp(i)-ieq_start+1
+        k=fixed_freedoms_start+i-1; xnew_pp(l)=val_f(k)
+      END DO
+    END IF
+    timest(4)=timest(4)+(elap_time()-timest(3))
+    IF(j/npri*npri==j)THEN; timest(5)=elap_time()
+      IF(numpe==1)THEN; WRITE(ch,'(I6.6)') j
+        OPEN(12,file=argv(1:nlen)//".ensi.NDTTR-"//ch,status='replace',  &
+          action='write')
+        WRITE(12,'(A)')                                                  &
+          "Alya Ensight Gold --- Scalar per-node variable file"
+        WRITE(12,'(A/A/A)') "part", "    1","coordinates"
+      END IF; eld_pp=zero; ttr_pp=zero; CALL gather(xnew_pp(1:),eld_pp)
+      CALL scatter_nodes(npes,nn,nels_pp,g_num_pp,nod,nodof,nodes_pp,    &
+        node_start,node_end,eld_pp,ttr_pp,1)
+      CALL dismsh_ensi_p(12,1,nodes_pp,npes,numpe,1,ttr_pp)
+      IF(numpe==1) CLOSE(12)
+      IF(numpe==it) WRITE(11,'(2E12.4,I10)') real_time,xnew_pp(is),iters
+      timest(6)=timest(6)+(elap_time()-timest(5))
+    END IF
+  END DO timesteps
+
+  ! Write final checkpoint for restart chaining
+  IF(numpe==1) THEN
+    fname = argv(1:nlen)//".chk"
+    OPEN(28,file=fname,status='replace',action='write',             &
+         form='unformatted',access='stream')
+    WRITE(28) nstep
+  END IF
+  CALL write_x_pp("*FINAL",28,nstep,nodes_pp,npes,numpe,1,xnew_pp)
+  IF(numpe==1) CLOSE(28)
+
+  IF(numpe==it) THEN
+    WRITE(11,'(A,F10.4)') "The solution phase took ",timest(4)
+    WRITE(11,'(A,F10.4)') "Writing the output took ",timest(6)
+    WRITE(11,'(A,F10.4)') "This analysis took      ",elap_time()-timest(1)
+    CLOSE(11)
+  END IF; CALL SHUTDOWN()
+END PROGRAM gdps_thermal_transient

@@ -1,9 +1,14 @@
 <toolbox monitor="true">
     <section id="gdps_preprocessing" name="GDPS Pre-Processing">
-        <tool file="tools/gdps_meshgen_box/gdps_meshgen_box.xml" />
+        <tool file="tools/gdps_mesh_convert/gdps_mesh_convert.xml" />
         <tool file="tools/gdps_mesh_import/gdps_mesh_import.xml" />
+        <tool file="tools/gdps_mesh_preview/gdps_mesh_preview.xml" />
+        <tool file="tools/gdps_meshgen_box/gdps_meshgen_box.xml" />
         <tool file="tools/gdps_bc_thermal/gdps_bc_thermal.xml" />
         <tool file="tools/gdps_bc_transient/gdps_bc_transient.xml" />
+        <tool file="tools/gdps_bc_schedule/gdps_bc_schedule.xml" />
+        <tool file="tools/gdps_sensor_to_bcs/gdps_sensor_to_bcs.xml" />
+        <tool file="tools/gdps_extract_ic/gdps_extract_ic.xml" />
     </section>
     <section id="gdps_solvers" name="GDPS Solvers">
         <tool file="tools/gdps_steady_thermal/gdps_steady_thermal.xml" />

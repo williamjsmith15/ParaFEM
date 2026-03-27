@@ -1,6 +1,6 @@
-<tool id="gdps_transient_thermal" name="ParaFEM Transient Thermal Solver" version="0.1.0">
+<tool id="gdps_transient_thermal" name="ParaFEM Transient Thermal Solver" version="0.2.0">
 
-    <description>Solve 3D transient heat conduction using ParaFEM p124 (implicit theta + PCG solver)</description>
+    <description>Solve 3D transient heat conduction with IC/restart support (GDPS solver)</description>
 
     <requirements>
         <container type="docker">williamjsmith15/parafem:latest</container>
@@ -13,9 +13,24 @@
         cp '$fix_file' job.fix &&
         cp '$dat_file' job.dat &&
         cp '$mat_file' job.mat &&
-        mpirun -np \${GALAXY_SLOTS:-1} p124 job 2>&1;
+        #if $ic_type.mode == "file":
+            cp '$ic_type.ini_file' job.ini &&
+            echo "2" > job.ctrl &&
+            echo "job.ini" >> job.ctrl &&
+        #elif $ic_type.mode == "restart":
+            cp '$ic_type.chk_file' job.chk &&
+            echo "3" > job.ctrl &&
+            echo "job.chk" >> job.ctrl &&
+        #else:
+            echo "1" > job.ctrl &&
+        #end if
+        #if str($bcs_file) != "None":
+            cp '$bcs_file' job.bcs &&
+        #end if
+        mpirun -np \${GALAXY_SLOTS:-1} gdps_thermal_transient job 2>&1;
         RC=\$?;
         if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
+        if [ -f job.chk ]; then mv job.chk '$output_chk'; fi;
         if ls job.ensi.* 1>/dev/null 2>&1; then tar czf '$output_ensi' job.ensi.*; else tar czf '$output_ensi' --files-from /dev/null; fi;
         exit \${RC}
     ]]></command>
@@ -31,31 +46,49 @@
                help="Solver control parameters from BC generator" />
         <param type="data" name="mat_file" label="Material properties (.mat)"
                help="Material thermal properties (kx, ky, kz, rho, cp) from BC generator" />
+        <conditional name="ic_type">
+            <param name="mode" type="select" label="Initial Condition Mode">
+                <option value="uniform" selected="true">Uniform (from .dat)</option>
+                <option value="file">From .ini file (per-node)</option>
+                <option value="restart">Restart from checkpoint (.chk)</option>
+            </param>
+            <when value="uniform">
+            </when>
+            <when value="file">
+                <param name="ini_file" type="data" format="ini" label="Initial Condition file (.ini)" />
+            </when>
+            <when value="restart">
+                <param name="chk_file" type="data" format="chk" label="Checkpoint file (.chk)" />
+            </when>
+        </conditional>
+        <param type="data" name="bcs_file" label="BC schedule (.bcs)" optional="true" format="txt"
+               help="Time-varying BC schedule from gdps_bc_schedule. If provided, BC values are updated at the specified timesteps." />
     </inputs>
 
     <outputs>
         <data format="txt" name="output_res" label="Results summary (.res)" />
         <data format="tar.gz" name="output_ensi" label="EnSight output (.ensi.tar.gz)" />
+        <data format="chk" name="output_chk" label="Checkpoint file (.chk)">
+            <filter>ic_type['mode'] != "restart"</filter>
+        </data>
     </outputs>
 
     <help>
-Solves 3D transient heat conduction using ParaFEM program p124.
+Solves 3D transient heat conduction using the GDPS transient thermal solver.
 
 Solver: Implicit theta time integration with Preconditioned Conjugate Gradient (PCG)
 for the spatial solve at each time step. Uses 8-node hexahedral elements.
 
-Time integration schemes (set via theta in the .dat file):
-- theta=0.5: Crank-Nicolson (second-order accurate)
-- theta=1.0: Fully implicit/backward Euler (unconditionally stable)
-
-Boundary conditions: Dirichlet (fixed temperature) via the penalty method.
-Material properties (conductivity, density, specific heat) are read from the .mat file.
+Initial Conditions:
+- Uniform: Uses the 'val0' value from the .dat file as the starting temperature for all nodes.
+- From .ini file: Reads per-node temperatures from a text file (produced by Extract IC tool).
+- Restart: Continues a previous simulation from a binary checkpoint (.chk) file.
 
 Outputs:
-- .res: text summary with time, temperature at monitor node, and PCG iterations per step
-- .ensi.tar.gz: EnSight Gold scalar fields (NDTTR-NNNNNN) for each output timestep
+- .res: text summary with time, temperature at monitor node, and PCG iterations per step.
+- .ensi.tar.gz: EnSight Gold scalar fields (NDTTR-NNNNNN) for each output timestep.
+- .chk: binary checkpoint file for subsequent restarts.
 
-Pass the .ensi.tar.gz to the ParaFEM to VTU Converter for ParaView visualization.
 The number of MPI processes is controlled by GALAXY_SLOTS.
     </help>
 </tool>

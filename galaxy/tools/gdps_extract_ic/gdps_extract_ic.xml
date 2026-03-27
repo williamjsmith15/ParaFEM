@@ -1,0 +1,26 @@
+<tool id="gdps_extract_ic" name="Extract IC" version="0.1.0">
+    <description>Extract initial conditions from EnSight output (NDTTR scalar or tar.gz)</description>
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-vtu:latest</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        python3 '$__tool_directory__/gdps_extract_ic.py' '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="tar.gz,ensi,txt" label="EnSight output (.ensi.tar.gz or single NDTTR file)"
+               help="Accepts a tar.gz archive from the transient solver (picks the last NDTTR file) or a single NDTTR scalar file." />
+    </inputs>
+    <outputs>
+        <data name="output" format="ini" label="${input.name} initial conditions (.ini)"/>
+    </outputs>
+    <help><![CDATA[
+Extracts per-node initial conditions from EnSight Gold transient thermal output.
+
+Accepts:
+- A ``.ensi.tar.gz`` archive produced by the transient solver (picks the last NDTTR timestep)
+- A single EnSight scalar file (e.g. ``job.ensi.NDTTR-000010``)
+
+Output is a ``.ini`` file with node count on line 1, followed by one temperature value per node.
+Feed this into the transient solver's *From .ini file* initial condition mode to resume from a saved state.
+    ]]></help>
+</tool>

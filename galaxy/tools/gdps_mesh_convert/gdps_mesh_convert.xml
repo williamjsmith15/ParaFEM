@@ -1,0 +1,43 @@
+<tool id="gdps_mesh_convert" name="ParaFEM Mesh Format Converter" version="0.1.0">
+    <description>Convert Gmsh, VTK, Salome, etc. to Abaqus .inp for ParaFEM</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-meshio:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python '$__tool_directory__/gdps_mesh_convert.py'
+        --input '$input_mesh'
+        --output '$output_inp'
+        #if $input_format:
+        --format '$input_format'
+        #end if
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="input_mesh" label="Input Mesh File" 
+               help="Supported formats: Gmsh (.msh), VTK (.vtk, .vtu), Salome (.unv), etc." />
+        <param type="text" name="input_format" label="Input Mesh Format (optional)"
+               help="Manually specify the input format if it's not detected by file extension." />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_inp" label="Converted Mesh (.inp)" />
+    </outputs>
+
+    <help>
+Converts various external mesh formats to Abaqus .inp format using the meshio library.
+This .inp file can then be imported into ParaFEM using the ParaFEM Mesh Import tool.
+
+**Supported input formats include:**
+- Gmsh (.msh)
+- VTK (.vtk, .vtu)
+- Salome (.unv)
+- H5M
+- Exodus
+- many others...
+
+The converter focuses on 3D volumetric elements (hexahedrons and tetrahedrons)
+suitable for ParaFEM simulations.
+    </help>
+</tool>

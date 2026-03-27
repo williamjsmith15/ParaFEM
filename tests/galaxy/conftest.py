@@ -72,8 +72,50 @@ def transient_workflow_id(gi):
     while time.time() < deadline:
         workflows = gi.workflows.get_workflows(published=True)
         for wf in workflows:
-            if "Transient Thermal" in wf["name"]:
+            if wf["name"] == "Transient Thermal (ParaFEM p124)":
                 return wf["id"]
         time.sleep(5)
 
     pytest.fail("Transient Thermal workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def ic_chain_workflow_id(gi):
+    """Find the transient IC chain workflow, waiting for bootstrap if needed."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        workflows = gi.workflows.get_workflows(published=True)
+        for wf in workflows:
+            if "Transient IC Chain" in wf["name"]:
+                return wf["id"]
+        time.sleep(5)
+
+    pytest.fail("Transient IC Chain workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def bc_schedule_workflow_id(gi):
+    """Find the GDPS Transient with BC Schedule workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        workflows = gi.workflows.get_workflows(published=True)
+        for wf in workflows:
+            if "GDPS Transient with BC Schedule" in wf["name"]:
+                return wf["id"]
+        time.sleep(5)
+
+    pytest.fail("GDPS Transient with BC Schedule workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def realtime_workflow_id(gi):
+    """Find the GDPS Real-Time Transient workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        workflows = gi.workflows.get_workflows(published=True)
+        for wf in workflows:
+            if "GDPS Real-Time Transient" in wf["name"]:
+                return wf["id"]
+        time.sleep(5)
+
+    pytest.fail("GDPS Real-Time Transient workflow not found (bootstrap may have failed)")

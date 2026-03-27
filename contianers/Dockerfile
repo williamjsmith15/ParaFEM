@@ -7,6 +7,8 @@ RUN apt-get update && \
 COPY ./parafem /parafem
 WORKDIR /parafem
 RUN ./make-parafem MACHINE=linuxdesktop
+RUN cd src/programs/dev/GDPS/gdps_thermal_transient && \
+    make MACHINE=linuxdesktop && make install MACHINE=linuxdesktop
 
 FROM ubuntu:20.04
 

@@ -34,7 +34,7 @@
             --output result.vtu
             2>&1 &&
 
-        tar czf '$output_tarball' result.pvd result_*.vtu
+        if [ -f result.pvd ]; then tar czf '$output_tarball' result.pvd result_*.vtu; elif [ -f result.vtu ]; then tar czf '$output_tarball' result.vtu; else echo "No VTU output produced" >&2; exit 1; fi
     ]]></command>
 
     <inputs>
