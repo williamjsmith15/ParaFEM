@@ -24,6 +24,9 @@
         #else:
             echo "1" > job.ctrl &&
         #end if
+        #if str($bcs_file) != "None":
+            cp '$bcs_file' job.bcs &&
+        #end if
         mpirun -np \${GALAXY_SLOTS:-1} gdps_thermal_transient job 2>&1;
         RC=\$?;
         if [ -f job.res ]; then mv job.res '$output_res'; else echo "Solver produced no .res output (exit code \${RC})" > '$output_res'; fi;
@@ -58,6 +61,8 @@
                 <param name="chk_file" type="data" format="chk" label="Checkpoint file (.chk)" />
             </when>
         </conditional>
+        <param type="data" name="bcs_file" label="BC schedule (.bcs)" optional="true" format="txt"
+               help="Time-varying BC schedule from gdps_bc_schedule. If provided, BC values are updated at the specified timesteps." />
     </inputs>
 
     <outputs>
