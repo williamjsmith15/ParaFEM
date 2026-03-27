@@ -21,22 +21,23 @@ PROGRAM gdps_thermal_transient
    nlen,node_end,node_start,nodes_pp,loaded_freedoms,fixed_freedoms,is,  &
    fixed_freedoms_pp,fixed_freedoms_start,loaded_freedoms_pp,np_types,   &
    loaded_freedoms_start,nels,ndof,npes_pp,meshgen,partitioner,tz,      &
-   ic_mode,j_chk,ier_mpi
+   ic_mode,j_chk,ier_mpi,n_sched,m,sched_match,node_tmp,sense_tmp
  REAL(iwp)::kx,ky,kz,det,theta,dtim,real_time,tol,alpha,beta,up,big,q,   &
    rho,cp,val0
  REAL(iwp),PARAMETER::zero=0.0_iwp,penalty=1.e20_iwp,t0=0.0_iwp
  CHARACTER(LEN=15)::element; CHARACTER(LEN=50)::argv,fname
  CHARACTER(LEN=100)::ic_file
- CHARACTER(LEN=6)::ch; LOGICAL::converged=.false.,ctrl_exists
+ CHARACTER(LEN=6)::ch; LOGICAL::converged=.false.,ctrl_exists,bcs_exists
  REAL(iwp),ALLOCATABLE::loads_pp(:),u_pp(:),p_pp(:),points(:,:),kay(:,:),&
    fun(:),jac(:,:),der(:,:),deriv(:,:),weights(:),d_pp(:),col(:,:),      &
    kc(:,:),pm(:,:),funny(:,:),storka_pp(:,:,:),row(:,:),prop(:,:),       &
    storkb_pp(:,:,:),x_pp(:),xnew_pp(:),pmul_pp(:,:),utemp_pp(:,:),       &
    diag_precon_pp(:),diag_precon_tmp(:,:),g_coord_pp(:,:,:),timest(:),   &
    ttr_pp(:),eld_pp(:,:),val(:,:),val_f(:),store_pp(:),r_pp(:),          &
-   kcx(:,:),kcy(:,:),kcz(:,:),eld(:)
+   kcx(:,:),kcy(:,:),kcz(:,:),eld(:),sched_vals(:,:)
  INTEGER,ALLOCATABLE::rest(:,:),g_num_pp(:,:),g_g_pp(:,:),no(:),         &
-   no_pp(:),no_f_pp(:),no_pp_temp(:),sense(:),node(:),etype_pp(:)
+   no_pp(:),no_f_pp(:),no_pp_temp(:),sense(:),node(:),etype_pp(:),       &
+   sched_steps(:)
 !--------------------------input and initialisation-----------------------
  ALLOCATE(timest(20)); timest=zero; timest(1)=elap_time()
  CALL find_pe_procs(numpe,npes); CALL getname(argv,nlen)
@@ -57,6 +58,40 @@ PROGRAM gdps_thermal_transient
  END IF
  CALL MPI_BCAST(ic_mode,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
  IF(ic_mode > 1) CALL MPI_BCAST(ic_file,100,MPI_CHARACTER,0,MPI_COMM_WORLD,ier_mpi)
+
+ n_sched = 0
+ IF(numpe==1) THEN
+   fname = argv(1:nlen)//".bcs"
+   INQUIRE(FILE=fname, EXIST=bcs_exists)
+   IF(bcs_exists) THEN
+     OPEN(21,FILE=fname,STATUS="OLD",ACTION="READ")
+     DO
+       READ(21,*,END=10) k
+       n_sched = n_sched + 1
+       DO i=1,fixed_freedoms
+         READ(21,*)
+       END DO
+     END DO
+10   REWIND(21)
+     IF(n_sched > 0) THEN
+       ALLOCATE(sched_steps(n_sched), sched_vals(fixed_freedoms, n_sched))
+       DO i=1,n_sched
+         READ(21,*) sched_steps(i)
+         DO k=1,fixed_freedoms
+           READ(21,*) node_tmp, sense_tmp, sched_vals(k, i)
+         END DO
+       END DO
+     END IF
+     CLOSE(21)
+   END IF
+ END IF
+
+ CALL MPI_BCAST(n_sched,1,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+ IF(n_sched > 0) THEN
+    IF(numpe > 1) ALLOCATE(sched_steps(n_sched), sched_vals(fixed_freedoms, n_sched))
+    CALL MPI_BCAST(sched_steps,n_sched,MPI_INTEGER,0,MPI_COMM_WORLD,ier_mpi)
+    CALL MPI_BCAST(sched_vals,fixed_freedoms*n_sched,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ier_mpi)
+ END IF
 
  CALL calc_nels_pp(argv,nels,npes,numpe,partitioner,nels_pp)
  ndof=nod*nodof; ntot=ndof
@@ -209,6 +244,14 @@ PROGRAM gdps_thermal_transient
  IF(numpe==1) CLOSE(12)
 
  timesteps: DO j=j_chk+1,nstep
+    IF(n_sched > 0) THEN
+      DO m=1,n_sched
+        IF(sched_steps(m) == j) THEN
+          val_f = sched_vals(:, m)
+          EXIT
+        END IF
+      END DO
+    END IF
     real_time=j*dtim; timest(3)=elap_time(); loads_pp=zero
 !---- apply loads (sources and/or sinks) supplied as a boundary value ----
     IF(loaded_freedoms_pp>0) THEN

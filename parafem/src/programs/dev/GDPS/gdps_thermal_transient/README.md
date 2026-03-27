@@ -49,6 +49,7 @@ Optional:
 | `<jobname>.lds` | Applied nodal heat sources/sinks |
 | `<jobname>.ctrl` | Initial condition mode (see below) |
 | `<jobname>.chk` | Checkpoint from a previous run (required for ic_mode 3) |
+| `<jobname>.bcs` | Time-varying boundary condition schedule (see below) |
 
 ### `.dat` format
 
@@ -140,3 +141,37 @@ Unformatted stream binary, written by `write_x_pp`:
 Reading is handled by `read_x_pp(argv, npes, numpe, j_chk, xnew_pp)`. On restart
 with ic_mode 3, `j_chk` is used to offset the `.ensi.NDTTR` step counter and the
 `.res` time column so output from chained runs forms a continuous sequence.
+
+### `.bcs` file format
+
+The optional `<jobname>.bcs` file allows for time-varying boundary conditions.
+If present, the solver will update the prescribed temperatures at specified
+time steps. Initial conditions (at step 0) are always read from the `.fix` file;
+the `.bcs` file defines changes for `step > 0`.
+
+The format is a multi-block text file, aligned with the convention used by the
+`inp2pf.awk` preprocessor for multi-step Abaqus analyses.
+
+- Each block begins with a single integer on its own line, representing the
+  time step `j` at which the new BCs should be applied.
+- This is followed by a set of rows, one for each fixed freedom, with the
+  format `<node> <sense> <value>`.
+- The rows within each block **must be sorted in ascending order of node ID**,
+  exactly matching the order in the original `.fix` file. The solver reads the
+  values positionally.
+
+Example `.bcs` file with two updates for a mesh with 3 fixed freedoms:
+```
+50
+1 1 600.0
+2 1 600.0
+3 1 293.0
+100
+1 1 700.0
+2 1 600.0
+3 1 293.0
+```
+
+At time step `j=50`, the temperatures for nodes 1, 2, and 3 will be updated.
+At `j=100`, they will be updated again. For all other time steps, the previously
+set values are retained.
