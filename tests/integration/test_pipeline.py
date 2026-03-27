@@ -407,6 +407,75 @@ class TestTransientBCGenerator:
 
 
 @skip_no_docker
+class TestBCSchedule:
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.workdir = str(tmp_path)
+        if not image_exists('parafem:local'):
+            pytest.skip('parafem:local not built')
+        if not image_exists('parafem-bcgen:local'):
+            pytest.skip('parafem-bcgen:local not built')
+        import shutil
+        fixtures = os.path.join(REPO_ROOT, 'tests', 'fixtures')
+        shutil.copy(os.path.join(fixtures, 'small_2x2x2.d'), os.path.join(self.workdir, 'job.d'))
+
+    def test_schedule_pipeline(self):
+        import json
+        # 1. Base BCs (static)
+        zone_json = '[{"axis_min":0.0,"axis_max":0.1,"temperature":300.0},{"axis_min":0.9,"axis_max":1.0,"temperature":300.0}]'
+        with open(os.path.join(self.workdir, 'zones.json'), 'w') as f:
+            f.write(zone_json)
+        
+        bc_cmd = """python3 /tools/gdps_bc_transient/gdps_bc_transient.py \
+            --mesh_d /work/job.d \
+            --kx 50.0 --ky 50.0 --kz 50.0 --rho 7800.0 --cp 500.0 \
+            --val0 300.0 --dtim 10.0 --nstep 20 --npri 5 \
+            --theta 1.0 --tol 1.0e-8 --limit 200 \
+            --zone_config /work/zones.json --bc_axis z \
+            --output_dat /work/job.dat --output_bnd /work/job.bnd \
+            --output_fix /work/job.fix --output_mat /work/job.mat \
+            --output_d /work/job_out.d"""
+        run_in_container('parafem-bcgen:local', self.workdir, bc_cmd)
+        
+        # 2. Schedule: step 5 hot (600K), step 15 very hot (1000K) on the Z=0 face (axis range 0.9-1.0)
+        schedule = [
+            {"step": 5, "zones": [{"axis_min":0.9,"axis_max":1.0,"temperature":600.0}, {"axis_min":0.0,"axis_max":0.1,"temperature":300.0}]},
+            {"step": 15, "zones": [{"axis_min":0.9,"axis_max":1.0,"temperature":1000.0}, {"axis_min":0.0,"axis_max":0.1,"temperature":300.0}]}
+        ]
+        with open(os.path.join(self.workdir, 'sched.json'), 'w') as f:
+            json.dump(schedule, f)
+            
+        sched_cmd = """python3 /tools/gdps_bc_schedule/gdps_bc_schedule.py \
+            --mesh_d /work/job.d \
+            --schedule_config /work/sched.json \
+            --bc_mode zone --bc_axis z \
+            --output_bcs /work/job.bcs"""
+        run_in_container('parafem-bcgen:local', self.workdir, sched_cmd)
+        
+        # 3. Solve
+        solver_cmd = "cd /work && mpirun -np 1 gdps_thermal_transient job 2>&1"
+        result = run_in_container('parafem:local', self.workdir, solver_cmd)
+        assert result.returncode == 0
+        
+        # 4. Verify temperature rises at monitor node (nres=1 in job.dat by default)
+        with open(os.path.join(self.workdir, 'job.res')) as f:
+            content = f.read()
+            
+        rows = re.findall(r'^\s+([\d.E+\-]+)\s+([\d.E+\-]+)', content, re.MULTILINE)
+        # step 0, 5, 10, 15, 20 should be in output (npri=5, nstep=20)
+        assert len(rows) == 5
+        temps = [float(r[1]) for r in rows]
+        # temps[0] is t=0, T=300 (initial)
+        # temps[1] is t=50 (step 5), BC just changed to 600
+        # temps[2] is t=100 (step 10), should be > 300
+        # temps[4] is t=200 (step 20), should be significantly higher
+        assert temps[4] > temps[0]
+        assert all(t >= 300 for t in temps)
+        assert all(t <= 1000 for t in temps)
+
+
+@skip_no_docker
 class TestTransientSolver:
 
     @pytest.fixture(autouse=True)
