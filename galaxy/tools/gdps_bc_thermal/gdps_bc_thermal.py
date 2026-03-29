@@ -54,7 +54,8 @@ def main():
     # Parse zone config (JSON string or file)
     if os.path.isfile(args.zone_config):
         with open(args.zone_config, 'r') as f:
-            zones = json.load(f)
+            zone_str = sanitize_zone_json(f.read())
+        zones = json.loads(zone_str)
     else:
         zone_str = sanitize_zone_json(args.zone_config)
         zones = json.loads(zone_str)
