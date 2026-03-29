@@ -119,3 +119,31 @@ def realtime_workflow_id(gi):
         time.sleep(5)
 
     pytest.fail("GDPS Real-Time Transient workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def permeation_steady_workflow_id(gi):
+    """Find the Steady-State Hydrogen Permeation workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        workflows = gi.workflows.get_workflows(published=True)
+        for wf in workflows:
+            if "Steady-State Hydrogen Permeation" in wf["name"]:
+                return wf["id"]
+        time.sleep(5)
+
+    pytest.fail("Steady-State Hydrogen Permeation workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def permeation_transient_workflow_id(gi):
+    """Find the Transient Hydrogen Permeation workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        workflows = gi.workflows.get_workflows(published=True)
+        for wf in workflows:
+            if "Transient Hydrogen Permeation" in wf["name"]:
+                return wf["id"]
+        time.sleep(5)
+
+    pytest.fail("Transient Hydrogen Permeation workflow not found (bootstrap may have failed)")

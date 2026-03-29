@@ -32,6 +32,8 @@ EXPECTED_TOOLS = [
     "gdps_extract_ic",
     "gdps_bc_schedule",
     "gdps_sensor_to_bcs",
+    "gdps_sievert_bc",
+    "gdps_compute_diffusivity",
 ]
 
 WORKFLOW_TIMEOUT = 600  # 10 minutes max for full pipeline
@@ -770,3 +772,123 @@ class TestSensorToBCSTool:
         if current_block:
             assert current_block == sorted(current_block), \
                 f"Node IDs not ascending in last block: {current_block}"
+
+PERMEATION_TIMEOUT = 600
+
+
+@pytest.fixture(scope="module")
+def permeation_steady_result(gi, permeation_steady_workflow_id):
+    """Run the steady permeation workflow once."""
+    history = gi.histories.create_history(name="test-permeation-steady")
+    history_id = history["id"]
+
+    invocation = gi.workflows.invoke_workflow(
+        permeation_steady_workflow_id,
+        inputs={},
+        history_id=history_id,
+        allow_tool_state_corrections=True,
+    )
+    _wait_for_workflow(gi, invocation["id"], history_id, PERMEATION_TIMEOUT,
+                       "Steady permeation workflow")
+
+    yield gi, history_id
+
+    gi.histories.delete_history(history_id, purge=True)
+
+
+@pytest.fixture(scope="module")
+def permeation_transient_result(gi, permeation_transient_workflow_id):
+    """Run the transient permeation workflow once."""
+    history = gi.histories.create_history(name="test-permeation-transient")
+    history_id = history["id"]
+
+    invocation = gi.workflows.invoke_workflow(
+        permeation_transient_workflow_id,
+        inputs={},
+        history_id=history_id,
+        allow_tool_state_corrections=True,
+    )
+    _wait_for_workflow(gi, invocation["id"], history_id, PERMEATION_TIMEOUT,
+                       "Transient permeation workflow")
+
+    yield gi, history_id
+
+    gi.histories.delete_history(history_id, purge=True)
+
+
+class TestPermeationSteadyWorkflow:
+
+    def test_workflow_imported(self, gi, permeation_steady_workflow_id):
+        wf = gi.workflows.show_workflow(permeation_steady_workflow_id)
+        assert wf["name"] == "Steady-State Hydrogen Permeation (Phase 5)"
+
+    def test_workflow_step_count(self, gi, permeation_steady_workflow_id):
+        wf = gi.workflows.show_workflow(permeation_steady_workflow_id)
+        # 3 parameter inputs + 8 tool steps = 11 total
+        assert len(wf["steps"]) == 11, \
+            f"Expected 11 steps, got {len(wf['steps'])}"
+
+    def test_diffusion_solver_converges(self, permeation_steady_result):
+        gi, history_id = permeation_steady_result
+        res = _download_text(gi, history_id, r"Results summary.*\.res")
+        assert "NaN" not in res, "NaN in diffusion solver results"
+        match = re.search(r"iterations to convergence was\s+(\d+)", res)
+        assert match, f"No convergence info in .res:\n{res[:500]}"
+        assert int(match.group(1)) < 200
+
+    def test_concentration_field_produced(self, permeation_steady_result):
+        gi, history_id = permeation_steady_result
+        # occurrence=2: first is steady thermal (NDPTL), second is diffusion solver (NDTTR)
+        raw = _download_dataset(gi, history_id, r"EnSight output \(\.ensi\.tar\.gz\)$", occurrence=2)
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        names = tf.getnames()
+        tf.close()
+        ndttr = [n for n in names if "NDTTR" in n]
+        assert len(ndttr) > 0, f"No NDTTR (concentration) files in output: {names}"
+
+    def test_no_nan_in_concentration(self, permeation_steady_result):
+        gi, history_id = permeation_steady_result
+        # occurrence=2: first is steady thermal (NDPTL), second is diffusion solver (NDTTR)
+        raw = _download_dataset(gi, history_id, r"EnSight output \(\.ensi\.tar\.gz\)$", occurrence=2)
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        ndttr_members = sorted([m for m in tf.getmembers() if "NDTTR" in m.name], key=lambda m: m.name)
+        content = tf.extractfile(ndttr_members[-1]).read().decode("utf-8", errors="replace")
+        tf.close()
+        vals = []
+        for line in content.splitlines()[4:]:
+            try:
+                vals.append(float(line.strip()))
+            except ValueError:
+                pass
+        assert vals, "No concentration values parsed from EnSight output"
+        assert all(not (v != v) for v in vals), "NaN in concentration field"
+
+
+class TestPermeationTransientWorkflow:
+
+    def test_workflow_imported(self, gi, permeation_transient_workflow_id):
+        wf = gi.workflows.show_workflow(permeation_transient_workflow_id)
+        assert wf["name"] == "Transient Hydrogen Permeation (Phase 5)"
+
+    def test_workflow_step_count(self, gi, permeation_transient_workflow_id):
+        wf = gi.workflows.show_workflow(permeation_transient_workflow_id)
+        # 2 parameter inputs + 8 tool steps = 10 total
+        assert len(wf["steps"]) == 10, \
+            f"Expected 10 steps, got {len(wf['steps'])}"
+
+    def test_diffusion_solver_converges(self, permeation_transient_result):
+        gi, history_id = permeation_transient_result
+        res = _download_text(gi, history_id, r"Results summary.*\.res")
+        assert "NaN" not in res, "NaN in transient diffusion solver results"
+
+    def test_transient_concentration_field_produced(self, permeation_transient_result):
+        gi, history_id = permeation_transient_result
+        # occurrence=2: first match is steady thermal (p123/NDPTL), second is transient diffusion (p124/NDTTR)
+        # Use $ anchor so "initial conditions (.ini)" datasets don't match
+        raw = _download_dataset(gi, history_id, r"EnSight output \(\.ensi\.tar\.gz\)$", occurrence=2)
+        tf = tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz')
+        names = tf.getnames()
+        tf.close()
+        ndttr = [n for n in names if "NDTTR" in n]
+        assert len(ndttr) > 0, f"No NDTTR concentration files in transient output: {names}"
+        assert len(ndttr) > 1, f"Expected multiple timesteps in transient output, got {len(ndttr)}"
