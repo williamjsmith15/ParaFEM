@@ -5,43 +5,67 @@
     "name": "Transient Hydrogen Permeation (Phase 5)",
     "steps": {
         "0": {
-            "annotation": "Pressure Schedule (JSON): [{'step': 1, 'upstream_p': 100000.0, 'downstream_p': 0.0}, ...]",
+            "annotation": "Pressure Schedule JSON: [{\"step\": 1, \"upstream_p\": 100000.0, \"downstream_p\": 0.0}, ...]",
+            "content_id": null,
+            "errors": null,
             "id": 0,
             "input_connections": {},
-            "inputs": [{"description": "Pressure Schedule", "name": "pressure_schedule"}],
+            "inputs": [{"description": "Pressure Schedule (JSON)", "name": "pressure_schedule"}],
             "label": "Pressure Schedule (JSON)",
             "name": "Input parameter",
-            "type": "parameter_input",
+            "outputs": [],
+            "position": {"left": 0, "top": 0},
+            "tool_id": null,
             "tool_state": "{\"default\": \"[{\\\"step\\\": 1, \\\"upstream_p\\\": 100000.0, \\\"downstream_p\\\": 0.0}, {\\\"step\\\": 50, \\\"upstream_p\\\": 500000.0, \\\"downstream_p\\\": 0.0}]\", \"parameter_type\": \"text\", \"optional\": false}",
-            "uuid": "uuid-t0"
+            "tool_version": null,
+            "type": "parameter_input",
+            "uuid": "b2c3d4e5-0000-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "1": {
             "annotation": "Material selection from database",
+            "content_id": null,
+            "errors": null,
             "id": 1,
             "input_connections": {},
             "inputs": [{"description": "Material (iron/copper/tungsten)", "name": "material"}],
             "label": "Material",
             "name": "Input parameter",
-            "type": "parameter_input",
+            "outputs": [],
+            "position": {"left": 0, "top": 60},
+            "tool_id": null,
             "tool_state": "{\"default\": \"iron\", \"parameter_type\": \"text\", \"optional\": false}",
-            "uuid": "uuid-t1"
+            "tool_version": null,
+            "type": "parameter_input",
+            "uuid": "b2c3d4e5-0001-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "2": {
             "annotation": "Mesh Generation (Structured Hex)",
             "content_id": "gdps_meshgen_box",
+            "errors": null,
             "id": 2,
             "input_connections": {},
             "inputs": [],
             "label": "1. Mesh Generation",
             "name": "ParaFEM Box Mesh Generator",
+            "outputs": [],
+            "position": {"left": 250, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_meshgen_box",
-            "tool_state": "{\"nxe\": \"10\", \"nye\": \"10\", \"nze\": \"10\", \"dim_x\": \"1.0\", \"dim_y\": \"1.0\", \"dim_z\": \"0.01\"}",
+            "tool_state": "{\"nxe\": \"10\", \"nye\": \"10\", \"nze\": \"10\", \"dim_x\": \"1.0\", \"dim_y\": \"1.0\", \"dim_z\": \"0.01\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t2"
+            "uuid": "b2c3d4e5-0002-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "3": {
-            "annotation": "Thermal BCs for mesh",
+            "annotation": "Thermal BCs for steady base temperature field",
             "content_id": "gdps_bc_thermal",
+            "errors": null,
             "id": 3,
             "input_connections": {
                 "mesh_d": {"id": 2, "output_name": "output_d"}
@@ -49,14 +73,21 @@
             "inputs": [],
             "label": "2. Thermal BCs",
             "name": "ParaFEM Thermal BC Generator",
+            "outputs": [],
+            "position": {"left": 500, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_bc_thermal",
-            "tool_state": "{\"kx\": \"50.0\", \"ky\": \"50.0\", \"kz\": \"50.0\", \"zone_config\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.1, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.9, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 300.0}]\"}",
+            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": \"50.0\", \"ky\": \"50.0\", \"kz\": \"50.0\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"zone_config\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.1, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.9, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 300.0}]\", \"bc_mode\": {\"mode\": \"zone\", \"bc_axis\": \"z\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t3"
+            "uuid": "b2c3d4e5-0003-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "4": {
             "annotation": "Steady-state thermal solve (base temperature field)",
             "content_id": "gdps_steady_thermal",
+            "errors": null,
             "id": 4,
             "input_connections": {
                 "d_file": {"id": 3, "output_name": "output_d"},
@@ -67,112 +98,139 @@
             "inputs": [],
             "label": "3. Thermal Solver",
             "name": "ParaFEM Steady-State Thermal Solver",
+            "outputs": [],
+            "position": {"left": 750, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_steady_thermal",
-            "tool_state": "{}",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t4"
+            "uuid": "b2c3d4e5-0004-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "5": {
-            "annotation": "Extract temperature field",
+            "annotation": "Extract temperature field for D(T) and S(T) coupling",
             "content_id": "gdps_extract_ic",
+            "errors": null,
             "id": 5,
             "input_connections": {
-                "input_path": {"id": 4, "output_name": "output_ensi"}
+                "input": {"id": 4, "output_name": "output_ensi"}
             },
             "inputs": [],
             "label": "4. Extract Temperature",
             "name": "ParaFEM Extract IC",
+            "outputs": [],
+            "position": {"left": 1000, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_extract_ic",
-            "tool_state": "{}",
+            "tool_state": "{\"input\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t5"
+            "uuid": "b2c3d4e5-0005-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "6": {
-            "annotation": "Compute temperature-dependent diffusivity field",
+            "annotation": "Compute Arrhenius D(T) per element and write p124 .dat",
             "content_id": "gdps_compute_diffusivity",
+            "errors": null,
             "id": 6,
             "input_connections": {
                 "mesh_d": {"id": 3, "output_name": "output_d"},
                 "dat_file": {"id": 3, "output_name": "output_dat"},
-                "temp_mode|temp_field": {"id": 5, "output_name": "output_ini"},
-                "material_type|material": {"id": 1, "output_name": "output"}
+                "material_type|material": {"id": 1, "output_name": "output"},
+                "temp_mode|temp_field": {"id": 5, "output_name": "output"}
             },
             "inputs": [],
             "label": "5. Diffusivity Field",
             "name": "ParaFEM Diffusivity Field",
+            "outputs": [],
+            "position": {"left": 1250, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_compute_diffusivity",
-            "tool_state": "{\"temp_mode\": {\"mode\": \"field\"}, \"material_type\": {\"source\": \"database\"}}",
+            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"material_type\": {\"source\": \"database\", \"material\": {\"__class__\": \"ConnectedValue\"}}, \"temp_mode\": {\"mode\": \"field\", \"temp_field\": {\"__class__\": \"ConnectedValue\"}}, \"nstep\": \"100\", \"dtim\": \"0.1\", \"theta\": \"1.0\", \"val0\": \"0.0\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t6"
+            "uuid": "b2c3d4e5-0006-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "7": {
-            "annotation": "Mesh Import to handle modified .d and .nset",
-            "content_id": "gdps_mesh_import",
+            "annotation": "Sievert's Law concentration BC schedule (zone mode, z-axis)",
+            "content_id": "gdps_sievert_bc",
+            "errors": null,
             "id": 7,
             "input_connections": {
-                "mesh_inp": {"id": 6, "output_name": "output_d"}
+                "mesh_d": {"id": 6, "output_name": "output_d"},
+                "material_type|material": {"id": 1, "output_name": "output"},
+                "temp_mode|temp_field": {"id": 5, "output_name": "output"},
+                "pressure_type|pressure_schedule": {"id": 0, "output_name": "output"}
             },
             "inputs": [],
-            "label": "6. Re-import Mesh",
-            "name": "ParaFEM Mesh Import",
-            "tool_id": "gdps_mesh_import",
-            "tool_state": "{}",
+            "label": "6. Sievert BC Schedule",
+            "name": "ParaFEM Sievert's Law BC",
+            "outputs": [],
+            "position": {"left": 1500, "top": 0},
+            "post_job_actions": {},
+            "tool_id": "gdps_sievert_bc",
+            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"bc_mode\": {\"mode\": \"zone\", \"bc_axis\": \"z\", \"upstream_min\": 0.0, \"upstream_max\": 0.05, \"downstream_min\": 0.95, \"downstream_max\": 1.0}, \"material_type\": {\"source\": \"database\", \"material\": {\"__class__\": \"ConnectedValue\"}}, \"temp_mode\": {\"mode\": \"field\", \"temp_field\": {\"__class__\": \"ConnectedValue\"}}, \"pressure_type\": {\"type\": \"scheduled\", \"pressure_schedule\": {\"__class__\": \"ConnectedValue\"}}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.1.0",
             "type": "tool",
-            "uuid": "uuid-t7"
+            "uuid": "b2c3d4e5-0007-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
         "8": {
-            "annotation": "Sievert's Law concentration BC schedule",
-            "content_id": "gdps_sievert_bc",
-            "id": 8,
-            "input_connections": {
-                "mesh_d": {"id": 7, "output_name": "output_d"},
-                "nset_file": {"id": 7, "output_name": "output_nset"},
-                "pressure_type|pressure_schedule": {"id": 0, "output_name": "output"},
-                "material_type|material": {"id": 1, "output_name": "output"},
-                "temp_mode|temp_field": {"id": 5, "output_name": "output_ini"}
-            },
-            "inputs": [],
-            "label": "7. Sievert BC Schedule",
-            "name": "ParaFEM Sievert's Law BC",
-            "tool_id": "gdps_sievert_bc",
-            "tool_state": "{\"temp_mode\": {\"mode\": \"field\"}, \"material_type\": {\"source\": \"database\"}, \"pressure_type\": {\"type\": \"scheduled\"}}",
-            "type": "tool",
-            "uuid": "uuid-t8"
-        },
-        "9": {
             "annotation": "Transient Diffusion solve",
             "content_id": "gdps_transient_thermal",
-            "id": 9,
+            "errors": null,
+            "id": 8,
             "input_connections": {
-                "d_file": {"id": 7, "output_name": "output_d"},
+                "d_file": {"id": 6, "output_name": "output_d"},
                 "dat_file": {"id": 6, "output_name": "output_dat"},
-                "bcs_file": {"id": 8, "output_name": "output_bcs"},
+                "fix_file": {"id": 7, "output_name": "output_fix"},
+                "bnd_file": {"id": 3, "output_name": "output_bnd"},
+                "bcs_file": {"id": 7, "output_name": "output_bcs"},
                 "mat_file": {"id": 6, "output_name": "output_mat"}
             },
             "inputs": [],
-            "label": "8. Transient Solver",
+            "label": "7. Transient Solver",
             "name": "ParaFEM Transient Thermal Solver",
+            "outputs": [],
+            "position": {"left": 1750, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_transient_thermal",
-            "tool_state": "{\"nstep\": \"100\", \"dtim\": \"0.1\", \"theta\": \"0.5\", \"val0\": \"0.0\"}",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"bcs_file\": {\"__class__\": \"ConnectedValue\"}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"ic_type\": {\"mode\": \"uniform\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.2.0",
             "type": "tool",
-            "uuid": "uuid-t9"
+            "uuid": "b2c3d4e5-0008-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         },
-        "10": {
-            "annotation": "Post-process transient results",
+        "9": {
+            "annotation": "Post-process transient diffusion results",
             "content_id": "gdps_parafem2vtu_transient",
-            "id": 10,
+            "errors": null,
+            "id": 9,
             "input_connections": {
-                "d_file": {"id": 7, "output_name": "output_d"},
-                "ensi_tarball": {"id": 9, "output_name": "output_ensi"}
+                "d_file": {"id": 6, "output_name": "output_d"},
+                "ensi_tarball": {"id": 8, "output_name": "output_ensi"}
             },
             "inputs": [],
-            "label": "9. Final VTU (Transient)",
+            "label": "8. VTU Output (Transient)",
             "name": "ParaFEM to VTU (Transient)",
+            "outputs": [],
+            "position": {"left": 2000, "top": 0},
+            "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu_transient",
-            "tool_state": "{}",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": null, \"fix_file\": null, \"dtim\": \"0.1\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "0.2.0",
             "type": "tool",
-            "uuid": "uuid-t10"
+            "uuid": "b2c3d4e5-0009-4000-8000-000000000000",
+            "when": null,
+            "workflow_outputs": []
         }
     },
-    "uuid": "uuid-transient-main"
+    "uuid": "b2c3d4e5-ffff-4000-8000-000000000000"
 }

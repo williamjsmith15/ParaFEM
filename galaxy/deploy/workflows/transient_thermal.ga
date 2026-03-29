@@ -628,7 +628,7 @@
             },
             "post_job_actions": {},
             "tool_id": "gdps_transient_thermal",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"ic_type\": {\"mode\": \"uniform\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"bcs_file\": null, \"ic_type\": {\"mode\": \"uniform\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "3f7158c9-f2d1-4bfc-bcb2-c428b45c1c7b",
