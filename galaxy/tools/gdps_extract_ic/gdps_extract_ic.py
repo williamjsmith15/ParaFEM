@@ -42,11 +42,11 @@ def extract_ic(input_path, output_file):
     if tarfile.is_tarfile(input_path):
         with tarfile.open(input_path, 'r:gz') as tf:
             ndttr = sorted(
-                [m for m in tf.getmembers() if 'NDTTR' in m.name],
+                [m for m in tf.getmembers() if 'NDTTR' in m.name or 'NDPTL' in m.name],
                 key=lambda m: m.name
             )
             if not ndttr:
-                print("Error: no NDTTR files found in tarball")
+                print("Error: no NDTTR or NDPTL files found in tarball")
                 sys.exit(1)
             last = ndttr[-1]
             print(f"Using {last.name} (last NDTTR by step)")

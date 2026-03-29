@@ -1,4 +1,4 @@
-<tool id="gdps_sievert_bc" name="ParaFEM Sievert's Law BC" version="0.1.0">
+<tool id="gdps_sievert_bc" name="ParaFEM Sievert's Law BC" version="0.2.0">
     <description>Convert pressure BCs to concentration BCs using Sievert's Law</description>
     <requirements>
         <container type="docker">williamjsmith15/parafem-bcgen:latest</container>
@@ -6,17 +6,28 @@
     <command><![CDATA[
         python3 '$__tool_directory__/gdps_sievert_bc.py'
             --mesh_d '$mesh_d'
-            --nset_file '$nset_file'
-            --upstream_nset '$upstream_nset'
-            --downstream_nset '$downstream_nset'
-            
+
+            #if $bc_mode.mode == "nset":
+                --bc_mode nset
+                --nset_file '$bc_mode.nset_file'
+                --upstream_nset '$bc_mode.upstream_nset'
+                --downstream_nset '$bc_mode.downstream_nset'
+            #else:
+                --bc_mode zone
+                --bc_axis '$bc_mode.bc_axis'
+                --upstream_min $bc_mode.upstream_min
+                --upstream_max $bc_mode.upstream_max
+                --downstream_min $bc_mode.downstream_min
+                --downstream_max $bc_mode.downstream_max
+            #end if
+
             #if $material_type.source == "database":
                 --material '$material_type.material'
             #else:
                 --S0 $material_type.S0
                 --Es $material_type.Es
             #end if
-            
+
             #if $temp_mode.mode == "scalar":
                 --temp_mode scalar
                 --temp_scalar $temp_mode.temp_scalar
@@ -24,15 +35,16 @@
                 --temp_mode field
                 --temp_field '$temp_mode.temp_field'
             #end if
-            
+
             #if $pressure_type.type == "static":
                 --upstream_p $pressure_type.upstream_p
                 --downstream_p $pressure_type.downstream_p
-                --output_fix '$output_fix'
             #else:
                 --pressure_schedule '$pressure_file'
                 --output_bcs '$output_bcs'
             #end if
+
+            --output_fix '$output_fix'
     ]]></command>
     <configfiles>
         <configfile name="pressure_file">
@@ -43,10 +55,32 @@ ${pressure_type.pressure_schedule}
     </configfiles>
     <inputs>
         <param type="data" name="mesh_d" label="Mesh geometry (.d)" format="txt" />
-        <param type="data" name="nset_file" label="Node sets (.nset)" format="txt" />
-        <param type="text" name="upstream_nset" label="Upstream NSET name" value="UPSTREAM_FACE" />
-        <param type="text" name="downstream_nset" label="Downstream NSET name" value="DOWNSTREAM_FACE" />
-        
+
+        <conditional name="bc_mode">
+            <param name="mode" type="select" label="Node Selection Mode">
+                <option value="zone" selected="true">Zone (coordinate range)</option>
+                <option value="nset">Node Sets (.nset file)</option>
+            </param>
+            <when value="zone">
+                <param name="bc_axis" type="select" label="Permeation axis">
+                    <option value="z" selected="true">Z</option>
+                    <option value="x">X</option>
+                    <option value="y">Y</option>
+                </param>
+                <param name="upstream_min" type="float" label="Upstream zone start (normalised)" value="0.0"
+                       help="Fraction of axis range; 0.0 = minimum coordinate." />
+                <param name="upstream_max" type="float" label="Upstream zone end (normalised)" value="0.05" />
+                <param name="downstream_min" type="float" label="Downstream zone start (normalised)" value="0.95" />
+                <param name="downstream_max" type="float" label="Downstream zone end (normalised)" value="1.0"
+                       help="Fraction of axis range; 1.0 = maximum coordinate." />
+            </when>
+            <when value="nset">
+                <param type="data" name="nset_file" label="Node sets (.nset)" format="txt" />
+                <param type="text" name="upstream_nset" label="Upstream NSET name" value="UPSTREAM_FACE" />
+                <param type="text" name="downstream_nset" label="Downstream NSET name" value="DOWNSTREAM_FACE" />
+            </when>
+        </conditional>
+
         <conditional name="material_type">
             <param name="source" type="select" label="Material Data Source">
                 <option value="database" selected="true">Material Database</option>
@@ -60,11 +94,13 @@ ${pressure_type.pressure_schedule}
                 </param>
             </when>
             <when value="custom">
-                <param name="S0" type="float" label="Solubility pre-exponential (S0)" value="5.1e-3" help="mol/(m^3*Pa^0.5)" />
-                <param name="Es" type="float" label="Solubility activation energy (Es)" value="28600.0" help="J/mol" />
+                <param name="S0" type="float" label="Solubility pre-exponential (S0)" value="5.1e-3"
+                       help="mol/(m^3*Pa^0.5)" />
+                <param name="Es" type="float" label="Solubility activation energy (Es)" value="28600.0"
+                       help="J/mol" />
             </when>
         </conditional>
-        
+
         <conditional name="temp_mode">
             <param name="mode" type="select" label="Temperature Input Mode">
                 <option value="scalar" selected="true">Scalar Temperature (Uniform)</option>
@@ -74,10 +110,11 @@ ${pressure_type.pressure_schedule}
                 <param name="temp_scalar" type="float" label="Temperature (K)" value="500.0" />
             </when>
             <when value="field">
-                <param name="temp_field" type="data" label="Temperature Field File" format="txt" help="EnSight scalar file (.ensi.NDP*)" />
+                <param name="temp_field" type="data" label="Temperature Field File" format="txt"
+                       help="EnSight scalar file or .ini file from Extract IC tool" />
             </when>
         </conditional>
-        
+
         <conditional name="pressure_type">
             <param name="type" type="select" label="Pressure Mode">
                 <option value="static" selected="true">Static Pressures</option>
@@ -88,7 +125,7 @@ ${pressure_type.pressure_schedule}
                 <param name="downstream_p" type="float" label="Downstream Pressure (Pa)" value="0.0" />
             </when>
             <when value="scheduled">
-                <param name="pressure_schedule" type="text" area="true" label="Pressure Schedule (JSON)" 
+                <param name="pressure_schedule" type="text" area="true" label="Pressure Schedule (JSON)"
                        value='[{"step": 1, "upstream_p": 100000.0, "downstream_p": 0.0}, {"step": 10, "upstream_p": 200000.0, "downstream_p": 0.0}]'
                        help="JSON array of steps with upstream_p and downstream_p">
                     <sanitizer>
@@ -99,20 +136,29 @@ ${pressure_type.pressure_schedule}
         </conditional>
     </inputs>
     <outputs>
-        <data format="txt" name="output_fix" label="Fixed concentrations (.fix)">
-            <filter>pressure_type['type'] == 'static'</filter>
-        </data>
+        <data format="txt" name="output_fix" label="Fixed concentrations (.fix)"
+              help="Initial fixed concentrations. In scheduled mode, uses first schedule entry." />
         <data format="txt" name="output_bcs" label="Concentration schedule (.bcs)">
             <filter>pressure_type['type'] == 'scheduled'</filter>
         </data>
     </outputs>
     <help>
-Converts gas pressure (Pa) at boundaries to concentration (mol/m^3) using Sievert's Law:
-C = S(T) * sqrt(P)
+Converts gas pressure (Pa) at boundaries to molar concentration (mol/m^3) using Sievert's Law:
+
+  C = S(T) * sqrt(P)
 
 Where solubility S(T) follows the Arrhenius relation:
-S(T) = S0 * exp(-Es / RT)
 
-This tool generates a ParaFEM .fix file (for static pressures) or a .bcs file (for time-varying pressures).
+  S(T) = S0 * exp(-Es / RT)
+
+**Node selection modes:**
+- Zone: identifies boundary nodes by their normalised coordinate along the permeation axis.
+  Suitable when mesh is generated directly from gdps_meshgen_box.
+- NSET: reads pre-defined node sets from a .nset file.
+
+**Pressure modes:**
+- Static: generates a .fix file with fixed concentrations at the boundary nodes.
+- Scheduled: generates both a .fix (initial conditions from first schedule entry) and a .bcs
+  file for time-varying concentrations used by the transient solver.
     </help>
 </tool>

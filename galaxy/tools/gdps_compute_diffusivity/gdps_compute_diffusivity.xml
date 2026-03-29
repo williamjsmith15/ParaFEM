@@ -1,5 +1,5 @@
-<tool id="gdps_compute_diffusivity" name="ParaFEM Diffusivity Field" version="0.1.0">
-    <description>Compute temperature-dependent diffusivity field (.mat)</description>
+<tool id="gdps_compute_diffusivity" name="ParaFEM Diffusivity Field" version="0.2.0">
+    <description>Compute temperature-dependent diffusivity field (.mat) and p124 .dat for diffusion solve</description>
     <requirements>
         <container type="docker">williamjsmith15/parafem-bcgen:latest</container>
     </requirements>
@@ -7,14 +7,14 @@
         python3 '$__tool_directory__/gdps_compute_diffusivity.py'
             --mesh_d '$mesh_d'
             --dat_file '$dat_file'
-            
+
             #if $material_type.source == "database":
                 --material '$material_type.material'
             #else:
                 --D0 $material_type.D0
                 --Ea $material_type.Ea
             #end if
-            
+
             #if $temp_mode.mode == "scalar":
                 --temp_mode scalar
                 --temp_scalar $temp_mode.temp_scalar
@@ -22,15 +22,21 @@
                 --temp_mode field
                 --temp_field '$temp_mode.temp_field'
             #end if
-            
+
+            --nstep $nstep
+            --dtim $dtim
+            --theta $theta
+            --val0 $val0
+
             --output_mat '$output_mat'
             --output_d '$output_d'
             --output_dat '$output_dat'
     ]]></command>
     <inputs>
         <param type="data" name="mesh_d" label="Mesh geometry (.d)" format="txt" />
-        <param type="data" name="dat_file" label="Control data (.dat)" format="txt" />
-        
+        <param type="data" name="dat_file" label="Control data (.dat)" format="txt"
+               help="p123 or p124 .dat from BC generator. Mesh/partition parameters are extracted; diffusion params below override the solve." />
+
         <conditional name="material_type">
             <param name="source" type="select" label="Material Data Source">
                 <option value="database" selected="true">Material Database</option>
@@ -48,7 +54,7 @@
                 <param name="Ea" type="float" label="Diffusivity activation energy (Ea)" value="4100.0" help="J/mol" />
             </when>
         </conditional>
-        
+
         <conditional name="temp_mode">
             <param name="mode" type="select" label="Temperature Input Mode">
                 <option value="scalar" selected="true">Scalar Temperature (Uniform)</option>
@@ -58,24 +64,36 @@
                 <param name="temp_scalar" type="float" label="Temperature (K)" value="500.0" />
             </when>
             <when value="field">
-                <param name="temp_field" type="data" label="Temperature Field File" format="txt" help="EnSight scalar file (.ensi.NDP*)" />
+                <param name="temp_field" type="data" label="Temperature Field File" format="txt"
+                       help="EnSight scalar (.ensi.NDTTR*) or .ini file from Extract IC tool" />
             </when>
         </conditional>
+
+        <param name="nstep" type="integer" label="Number of timesteps" value="1"
+               help="Use 1 with large dtim for steady-state; use many for transient." />
+        <param name="dtim" type="float" label="Timestep size (s)" value="1e10"
+               help="Large value (1e10) gives a single-step steady-state solution." />
+        <param name="theta" type="float" label="Theta (time integration)" value="1.0"
+               help="1.0 = fully implicit (recommended)." />
+        <param name="val0" type="float" label="Initial concentration (mol/m^3)" value="0.0"
+               help="Initial condition for the diffusion field." />
     </inputs>
     <outputs>
         <data format="txt" name="output_mat" label="Material properties (.mat)" />
-        <data format="txt" name="output_d" label="Modified mesh (.d)" />
-        <data format="txt" name="output_dat" label="Modified control data (.dat)" />
+        <data format="txt" name="output_d" label="Modified mesh (.d) with per-element material IDs" />
+        <data format="txt" name="output_dat" label="p124 control data (.dat) for diffusion solve" />
     </outputs>
     <help>
-Computes temperature-dependent diffusivity for each element in the mesh.
-D(T) = D0 * exp(-Ea / RT)
+Computes temperature-dependent diffusivity for each mesh element using the Arrhenius relation:
 
-This tool generates:
-1. A .mat file with unique material properties for each element.
-2. A modified .d file where each element is assigned its unique material ID.
-3. A modified .dat file with the correct number of property types.
+  D(T) = D0 * exp(-Ea / RT)
 
-The resulting files can be used with p124 or gdps_thermal_transient for diffusion simulation.
+Outputs:
+1. .mat: one material entry per element with kx=ky=kz=D(T_avg), rho=1, cp=1.
+2. .d: mesh with each element's etype_pp set to its element ID for per-element lookup.
+3. .dat: a complete p124 control file with np_types=nels and the specified diffusion parameters.
+
+The .dat, .d, and .mat outputs are passed directly to the ParaFEM Transient Thermal Solver
+(gdps_transient_thermal) for the diffusion solve step.
     </help>
 </tool>
