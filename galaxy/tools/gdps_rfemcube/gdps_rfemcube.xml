@@ -1,0 +1,65 @@
+<tool id="gdps_rfemcube" name="RFEM Mesh Generator (rfemcube)" version="0.1.0">
+
+    <description>Generate structured hex mesh for RFEM analysis</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-rfem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        printf '%s\n' 'sim3de' '$output' '$nels $nxe $nze' '$aa $bb $cc' '$thx $thy $thz' '$emn $esd' '$varfnc' '0.3' > rfem.rf &&
+        rfemcube rfem model 2>&1;
+        RC=\$?;
+        if [ -f model.d ];   then cp model.d   '$output_d';   else echo "rfemcube: no .d output (exit \${RC})" > '$output_d'; fi;
+        if [ -f model.dat ]; then cp model.dat '$output_dat'; else echo "rfemcube: no .dat output" > '$output_dat'; fi;
+        if [ -f rfem.res ];  then cp rfem.res  '$output_res'; else echo "rfemcube: no .res output" > '$output_res'; fi;
+        exit \${RC}
+    ]]></command>
+
+    <inputs>
+        <param type="integer" name="nels" value="512" min="1" label="Total elements"
+               help="Must equal nxe * (nels/nxe/nze) * nze" />
+        <param type="integer" name="nxe"  value="8"   min="1" label="Elements in X" />
+        <param type="integer" name="nze"  value="8"   min="1" label="Elements in Z" />
+        <param type="float"   name="aa"   value="0.1" label="Element size X (m)" />
+        <param type="float"   name="bb"   value="0.1" label="Element size Y (m)" />
+        <param type="float"   name="cc"   value="0.1" label="Element size Z (m)" />
+        <param type="float"   name="thx"  value="1.0" label="Correlation length X" />
+        <param type="float"   name="thy"  value="1.0" label="Correlation length Y" />
+        <param type="float"   name="thz"  value="1.0" label="Correlation length Z" />
+        <param type="float"   name="emn"  value="1e-9" label="Mean diffusivity / conductivity"
+               help="Log-normal mean (D0 or k0)" />
+        <param type="float"   name="esd"  value="0.1" label="Std-dev of diffusivity"
+               help="Log-normal standard deviation" />
+        <param type="select"  name="varfnc" label="Variogram function">
+            <option value="dlavx3" selected="true">Locally averaged exponential (dlavx3)</option>
+            <option value="dlsep3">Separable exponential (dlsep3)</option>
+            <option value="dlspx3">Separable power (dlspx3)</option>
+        </param>
+        <param type="select"  name="output" label="Output mode">
+            <option value="1" selected="true">Material file only</option>
+            <option value="2">Material file + rfem mesh .d</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_d"   label="Mesh geometry (.d)" />
+        <data format="txt" name="output_dat" label="Control data (.dat)" />
+        <data format="txt" name="output_res" label="rfemcube log (.res)" />
+    </outputs>
+
+    <help>
+Generates a structured hexahedral mesh for RFEM (Random Finite Element Method) analysis.
+
+Uses the rfemcube tool to create a box of 8-node brick elements. The mesh and control file
+are passed to rfembc_thermal to add boundary conditions, then to rfemfield_thermal to
+assign spatially correlated random diffusivity values.
+
+The .rf config is assembled from the input parameters. The variogram and correlation
+lengths control the spatial structure of the random field.
+
+Total elements = nxe * nye * nze where nye = nels / nxe / nze.
+    </help>
+
+</tool>

@@ -1,0 +1,88 @@
+<tool id="gdps_rfemfield_thermal" name="RFEM Thermal Field Generator" version="0.1.0">
+
+    <description>Generate a spatially correlated log-normal random diffusivity field</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-rfem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file'   model.d &&
+        cp '$dat_file' model.dat &&
+        printf '%s\n' 'sim3de' '$output' '$nels $nxe $nze' '$aa $bb $cc' '$thx $thy $thz' '$emn $esd' '$varfnc' '0.3' > rfem.rf &&
+        rfemfield_thermal rfem model $instance_id 2>&1;
+        RC=\$?;
+        INST=model-${instance_id};
+        if [ -f "\${INST}.d" ] && [ -f "\${INST}.dat" ] && [ -f "\${INST}.mat" ]; then
+            tar czf '$output_instance' "\${INST}.d" "\${INST}.dat" "\${INST}.mat";
+        else
+            echo "rfemfield_thermal: missing output files (exit \${RC})" > '\${INST}.err';
+            tar czf '$output_instance' --files-from /dev/null;
+        fi;
+        if [ -f rfem.res ]; then cp rfem.res '$output_res'; else echo "rfemfield_thermal: no .res" > '$output_res'; fi;
+        exit \${RC}
+    ]]></command>
+
+    <inputs>
+        <param type="data"    name="d_file"      label="Mesh geometry (.d)"
+               help="From RFEM Mesh Generator" />
+        <param type="data"    name="dat_file"     label="Control data (.dat)"
+               help="From rfembc_thermal (updated with BCs)" />
+        <param type="text"    name="instance_id"  value="001"
+               label="Instance ID" help="Zero-padded integer, e.g. 001, 042">
+            <sanitizer invalid_char="">
+                <valid initial="string.digits"/>
+            </sanitizer>
+        </param>
+        <param type="integer" name="nels"  value="512"  min="1" label="RF grid total elements" />
+        <param type="integer" name="nxe"   value="8"    min="1" label="RF grid elements in X" />
+        <param type="integer" name="nze"   value="8"    min="1" label="RF grid elements in Z" />
+        <param type="float"   name="aa"    value="0.1"  label="RF element size X (m)" />
+        <param type="float"   name="bb"    value="0.1"  label="RF element size Y (m)" />
+        <param type="float"   name="cc"    value="0.1"  label="RF element size Z (m)" />
+        <param type="float"   name="thx"   value="0.3"  label="Correlation length X (m)" />
+        <param type="float"   name="thy"   value="0.3"  label="Correlation length Y (m)" />
+        <param type="float"   name="thz"   value="0.3"  label="Correlation length Z (m)" />
+        <param type="float"   name="emn"   value="1e-9" label="Mean D or k (log-normal mean)"
+               help="Mean diffusivity [m^2/s] or conductivity [W/(m*K)]" />
+        <param type="float"   name="esd"   value="0.5"  label="Std-dev of D or k"
+               help="Log-normal standard deviation — controls spread of material randomness" />
+        <param type="select"  name="varfnc" label="Variogram function">
+            <option value="dlavx3" selected="true">Locally averaged exponential (dlavx3)</option>
+            <option value="dlsep3">Separable exponential (dlsep3)</option>
+            <option value="dlspx3">Separable power (dlspx3)</option>
+        </param>
+        <param type="select"  name="output" label="RF grid output">
+            <option value="1" selected="true">Material file only</option>
+            <option value="2">Material file + RF mesh .d</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="tar.gz" name="output_instance"
+              label="Instance files (.d, .dat, .mat) for instance ${instance_id}" />
+        <data format="txt"    name="output_res"
+              label="Random field statistics (.res)" />
+    </outputs>
+
+    <help>
+Generates a spatially correlated log-normal random diffusivity (or conductivity) field
+and maps it to the model mesh elements by centroid proximity.
+
+Outputs a tar.gz archive containing:
+- model-{instance_id}.d   — mesh with per-element material IDs
+- model-{instance_id}.dat — updated control file (np_types = nels)
+- model-{instance_id}.mat — per-element diffusivity values
+
+This archive is passed to the RFEM Thermal Solver together with the shared .fix file.
+
+The random field is generated on a regular rfem grid (nxe × nye × nze) using the
+sim3de geostatistical routine. Log-normal distribution with spatial correlation
+controlled by thx/thy/thz (correlation lengths in metres).
+
+To run multiple MC instances, run this tool N times with different instance_id values,
+then map-over the resulting collection with the solver tool.
+    </help>
+
+</tool>

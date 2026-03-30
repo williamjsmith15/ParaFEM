@@ -1,0 +1,54 @@
+<tool id="gdps_rfembc_thermal" name="RFEM Thermal BC Generator" version="0.1.0">
+
+    <description>Apply Dirichlet BCs to zmin/zmax faces of an RFEM mesh (nodof=1)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-rfem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run && cd run &&
+        cp '$d_file'   model.d &&
+        cp '$dat_file' model.dat &&
+        rfembc_thermal model $val_upstream $val_downstream 2>&1;
+        RC=\$?;
+        if [ -f model.fix ]; then cp model.fix '$output_fix'; else echo "rfembc_thermal: no .fix (exit \${RC})" > '$output_fix'; fi;
+        if [ -f model.dat ]; then cp model.dat '$output_dat'; else echo "rfembc_thermal: no .dat" > '$output_dat'; fi;
+        if [ -f model.res ]; then cp model.res '$output_res'; else echo "rfembc_thermal: no .res" > '$output_res'; fi;
+        exit \${RC}
+    ]]></command>
+
+    <inputs>
+        <param type="data"  name="d_file"         label="Mesh geometry (.d)"
+               help="From RFEM Mesh Generator" />
+        <param type="data"  name="dat_file"        label="Control data (.dat)"
+               help="From RFEM Mesh Generator" />
+        <param type="float" name="val_upstream"    value="1.0"
+               label="Upstream concentration / temperature (zmax face)" />
+        <param type="float" name="val_downstream"  value="0.0"
+               label="Downstream concentration / temperature (zmin face)" />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_fix" label="Fixed freedoms (.fix)" />
+        <data format="txt" name="output_dat" label="Updated control (.dat)" />
+        <data format="txt" name="output_res" label="BC generator log (.res)" />
+    </outputs>
+
+    <help>
+Applies Dirichlet boundary conditions to the upstream (zmax) and downstream (zmin)
+faces of a structured RFEM mesh.
+
+For diffusion problems: val_upstream = C_upstream (from Sievert's law),
+val_downstream = 0 (or C_downstream).
+
+For thermal problems: val_upstream = T_hot, val_downstream = T_cold.
+
+Both faces are written to the .fix file (penalty method, nodof=1, sense=1).
+The .dat file is updated with the correct fixed_freedoms count and nr=0.
+
+The .fix file is shared across all random field instances — only the material
+properties (diffusivity) change per instance, not the boundary conditions.
+    </help>
+
+</tool>
