@@ -1,0 +1,39 @@
+FROM ubuntu:20.04 AS build
+
+RUN apt-get update && \
+    apt-get install -y make mpich gfortran gawk && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./parafem /parafem
+WORKDIR /parafem
+
+# Build core modules and libraries (includes gaf77 which provides sim3de)
+RUN ./make-parafem MACHINE=linuxdesktop --only-modules
+RUN ./make-parafem MACHINE=linuxdesktop --only-libs
+
+# Build existing rfem preprocessing tools
+RUN cd src/tools/preprocessing/rfemcube && \
+    make MACHINE=linuxdesktop && make install MACHINE=linuxdesktop
+
+# Build new thermal rfem tools
+RUN cd src/tools/preprocessing/rfemfield_thermal && \
+    make MACHINE=linuxdesktop && make install MACHINE=linuxdesktop
+RUN cd src/tools/preprocessing/rfembc_thermal && \
+    make MACHINE=linuxdesktop && make install MACHINE=linuxdesktop
+
+# Build rfemsolve_thermal solver
+RUN cd src/programs/dev/GDPS/rfemsolve_thermal && \
+    make MACHINE=linuxdesktop && make install MACHINE=linuxdesktop
+
+FROM ubuntu:20.04
+
+RUN apt-get update && \
+    apt-get install -y mpich && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /parafem/bin/rfemcube            /usr/local/bin/
+COPY --from=build /parafem/bin/rfemfield_thermal    /usr/local/bin/
+COPY --from=build /parafem/bin/rfembc_thermal       /usr/local/bin/
+COPY --from=build /parafem/bin/rfemsolve_thermal    /usr/local/bin/
+
+WORKDIR /work
