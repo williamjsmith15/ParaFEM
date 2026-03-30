@@ -1,0 +1,117 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "RFEM Thermal Uncertainty Quantification workflow. Generates a random thermal conductivity field and solves the steady-state heat equation. Produces nodal temperature distribution for one Monte Carlo instance.",
+    "format-version": "0.1",
+    "name": "RFEM Thermal UQ (Single Instance)",
+    "steps": {
+        "0": {
+            "annotation": "Generate structured hexahedral mesh for RFEM thermal analysis",
+            "content_id": "gdps_rfemcube",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [],
+            "label": "Generate RFEM Mesh",
+            "outputs": [
+                {"name": "output_d",   "type": "txt"},
+                {"name": "output_dat", "type": "txt"},
+                {"name": "output_res", "type": "txt"}
+            ],
+            "position": {"left": 0, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_rfemcube",
+            "tool_state": "{\"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"0.001\", \"bb\": \"0.001\", \"cc\": \"0.001\", \"thx\": \"0.005\", \"thy\": \"0.005\", \"thz\": \"0.005\", \"emn\": \"50.0\", \"esd\": \"10.0\", \"varfnc\": \"dlavx3\", \"output\": \"1\"}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "a1b2c3d4-0001-0000-0000-000000000001",
+            "workflow_outputs": [
+                {"label": "rfem_mesh_d",   "output_name": "output_d",   "uuid": "b1000001"},
+                {"label": "rfem_mesh_dat", "output_name": "output_dat", "uuid": "b1000002"}
+            ]
+        },
+        "1": {
+            "annotation": "Apply fixed-temperature BCs. T_hot=373K (upstream), T_cold=293K (downstream).",
+            "content_id": "gdps_rfembc_thermal",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "d_file":   {"id": 0, "output_name": "output_d"},
+                "dat_file": {"id": 0, "output_name": "output_dat"}
+            },
+            "inputs": [],
+            "label": "Apply Thermal BCs",
+            "outputs": [
+                {"name": "output_fix", "type": "txt"},
+                {"name": "output_dat", "type": "txt"},
+                {"name": "output_res", "type": "txt"}
+            ],
+            "position": {"left": 300, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_rfembc_thermal",
+            "tool_state": "{\"val_upstream\": \"373.0\", \"val_downstream\": \"293.0\"}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "a1b2c3d4-0001-0000-0000-000000000002",
+            "workflow_outputs": [
+                {"label": "rfem_fix", "output_name": "output_fix", "uuid": "b2000001"},
+                {"label": "rfem_bc_dat", "output_name": "output_dat", "uuid": "b2000002"}
+            ]
+        },
+        "2": {
+            "annotation": "Generate log-normal random thermal conductivity field. emn=50 W/(m.K), esd=10 W/(m.K).",
+            "content_id": "gdps_rfemfield_thermal",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "d_file":   {"id": 0, "output_name": "output_d"},
+                "dat_file": {"id": 1, "output_name": "output_dat"}
+            },
+            "inputs": [],
+            "label": "Generate Random k Field",
+            "outputs": [
+                {"name": "output_instance", "type": "tar.gz"},
+                {"name": "output_res",      "type": "txt"}
+            ],
+            "position": {"left": 600, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_rfemfield_thermal",
+            "tool_state": "{\"instance_id\": \"001\", \"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"0.001\", \"bb\": \"0.001\", \"cc\": \"0.001\", \"thx\": \"0.005\", \"thy\": \"0.005\", \"thz\": \"0.005\", \"emn\": \"50.0\", \"esd\": \"10.0\", \"varfnc\": \"dlavx3\", \"output\": \"1\"}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "a1b2c3d4-0001-0000-0000-000000000003",
+            "workflow_outputs": [
+                {"label": "instance_archive", "output_name": "output_instance", "uuid": "b3000001"},
+                {"label": "rf_stats",         "output_name": "output_res",      "uuid": "b3000002"}
+            ]
+        },
+        "3": {
+            "annotation": "Solve steady-state heat conduction with per-element random k field.",
+            "content_id": "gdps_rfemsolve_thermal",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "instance_archive": {"id": 2, "output_name": "output_instance"},
+                "fix_file":         {"id": 1, "output_name": "output_fix"}
+            },
+            "inputs": [],
+            "label": "Solve Heat Conduction",
+            "outputs": [
+                {"name": "output_res",  "type": "txt"},
+                {"name": "output_ensi", "type": "tar.gz"}
+            ],
+            "position": {"left": 900, "top": 200},
+            "post_job_actions": {},
+            "tool_id": "gdps_rfemsolve_thermal",
+            "tool_state": "{}",
+            "tool_version": "0.1.0",
+            "type": "tool",
+            "uuid": "a1b2c3d4-0001-0000-0000-000000000004",
+            "workflow_outputs": [
+                {"label": "thermal_results", "output_name": "output_res",  "uuid": "b4000001"},
+                {"label": "thermal_ensi",    "output_name": "output_ensi", "uuid": "b4000002"}
+            ]
+        }
+    },
+    "uuid": "rfem-thermal-uq-workflow-v1",
+    "tags": ["parafem", "rfem", "thermal", "uq", "gdps"]
+}
