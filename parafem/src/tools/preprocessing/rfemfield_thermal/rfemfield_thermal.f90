@@ -52,6 +52,7 @@ PROGRAM rfemfield_thermal
   CHARACTER(LEN=100)     :: model_job_name,rfem_job_name,fname,program_name
   CHARACTER(LEN=100)     :: dat_name,d_name
   CHARACTER(LEN=100)     :: instance_id_arg,instance_id
+  CHARACTER(LEN=20)      :: seed_env
   LOGICAL                :: debug=.false.
   LOGICAL                :: shofld=.false.
   LOGICAL                :: lunif=.false.
@@ -232,6 +233,8 @@ PROGRAM rfemfield_thermal
      istat  = 11
      efld   = zero
      kseed  = 0
+     CALL GET_ENVIRONMENT_VARIABLE('RFEM_SEED', seed_env)
+     IF (LEN_TRIM(seed_env) > 0) READ(seed_env, *) kseed
 
      fname = rfem_job_name(1:INDEX(rfem_job_name," ")-1) // ".mat"
      OPEN(12,FILE=fname,STATUS='REPLACE',ACTION='WRITE')
