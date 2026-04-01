@@ -1,0 +1,69 @@
+<tool id="gdps_rfem_map" name="RFEM Field Mapper" version="0.1.0">
+
+    <description>Map random field from structured grid onto arbitrary target mesh</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-analytics:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        export MPLBACKEND=Agg &&
+        export HOME=/tmp &&
+        python '$__tool_directory__/gdps_rfem_map.py'
+        --rf_mat '$rf_mat'
+        --target_d '$target_d'
+        --dat_file '$dat_file'
+        --instance_id '$instance_id'
+        --nxe $nxe
+        --nze $nze
+        --aa $aa
+        --bb $bb
+        --cc $cc
+        --origin_x $origin_x
+        --origin_y $origin_y
+        --origin_z $origin_z
+        --output_tar '$output_instance'
+        --output_res '$output_res'
+    ]]></command>
+
+    <inputs>
+        <param type="data"    name="rf_mat"    format="txt,tar.gz" label="RF Reference Material File (.mat or archive)"
+               help="From rfemfield_thermal or rfemmc_runner" />
+        <param type="data"    name="target_d"  format="txt" label="Target Mesh (.d)"
+               help="Arbitrary geometry to map the field onto" />
+        <param type="data"    name="dat_file"  format="txt" label="BC Control File (.dat)"
+               help="From rfembc_thermal — provides fixed_freedoms count for solver" />
+        <param type="text"    name="instance_id" value="001" label="Instance ID" />
+
+        <param type="integer" name="nxe"  value="8"   label="RF grid elements in X" />
+        <param type="integer" name="nze"  value="8"   label="RF grid elements in Z" />
+        <param type="float"   name="aa"   value="0.1" label="RF element size X (m)" />
+        <param type="float"   name="bb"   value="0.1" label="RF element size Y (m)" />
+        <param type="float"   name="cc"   value="0.1" label="RF element size Z (m)" />
+
+        <param type="float" name="origin_x" value="0.0" label="RF Grid Origin X" />
+        <param type="float" name="origin_y" value="0.0" label="RF Grid Origin Y" />
+        <param type="float" name="origin_z" value="0.0" label="RF Grid Origin Z" />
+    </inputs>
+
+    <outputs>
+        <data format="tar.gz" name="output_instance" label="Mapped Instance Archive for ${instance_id}" />
+        <data format="txt"    name="output_res"      label="Mapping Statistics for ${instance_id}" />
+    </outputs>
+
+    <help>
+Maps a spatially correlated random field from a structured reference grid onto an
+arbitrary target mesh by element centroid proximity.
+
+**Inputs:**
+- RF mat file: the random field material values from rfemfield_thermal
+- Target mesh: any .d file (structured or unstructured)
+- BC dat file: the .dat output from rfembc_thermal — required to carry the
+  correct fixed_freedoms count into the per-instance solver control file
+
+**Algorithm:** For each target element, compute centroid, find the corresponding
+RF grid cell (i,j,k), assign the RF diffusivity value. Out-of-bounds centroids
+clamp to the nearest cell.
+    </help>
+
+</tool>
