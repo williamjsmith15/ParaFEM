@@ -1,0 +1,201 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Monte Carlo RFEM Diffusion workflow for GDPS permeation. Runs N instances of spatially varying diffusivity and aggregates flux statistics.",
+    "format-version": "0.1",
+    "name": "RFEM Diffusion MC - GDPS Permeation (Batch)",
+    "steps": {
+        "0": {
+            "annotation": "Generate structured mesh for GDPS permeation sample",
+            "content_id": "gdps_rfemcube",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [],
+            "label": "Generate Membrane Mesh",
+            "outputs": [
+                {
+                    "name": "output_d",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_dat",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 0,
+                "top": 200
+            },
+            "tool_id": "gdps_rfemcube",
+            "tool_state": "{\"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"6.25e-4\", \"bb\": \"6.25e-4\", \"cc\": \"6.25e-5\", \"thx\": \"0.001\", \"thy\": \"0.001\", \"thz\": \"1.0e-4\", \"emn\": \"1.5e-12\", \"esd\": \"3.0e-13\", \"varfnc\": \"dlavx3\", \"output\": \"1\"}",
+            "type": "tool"
+        },
+        "1": {
+            "annotation": "Apply Dirichlet BCs from Sievert's law",
+            "content_id": "gdps_rfembc_thermal",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "d_file": {
+                    "id": 0,
+                    "output_name": "output_d"
+                },
+                "dat_file": {
+                    "id": 0,
+                    "output_name": "output_dat"
+                }
+            },
+            "inputs": [],
+            "label": "Apply Diffusion BCs",
+            "outputs": [
+                {
+                    "name": "output_fix",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_dat",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 250,
+                "top": 200
+            },
+            "tool_id": "gdps_rfembc_thermal",
+            "tool_state": "{\"val_upstream\": \"4.5e-3\", \"val_downstream\": \"0.0\"}",
+            "type": "tool"
+        },
+        "2": {
+            "annotation": "Generate N random field instances as a collection",
+            "content_id": "gdps_rfemmc_runner",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "d_file": {
+                    "id": 0,
+                    "output_name": "output_d"
+                },
+                "dat_file": {
+                    "id": 1,
+                    "output_name": "output_dat"
+                }
+            },
+            "inputs": [],
+            "label": "Generate MC Instances",
+            "outputs": [
+                {
+                    "name": "output_collection",
+                    "type": "input_collection"
+                }
+            ],
+            "position": {
+                "left": 500,
+                "top": 200
+            },
+            "tool_id": "gdps_rfemmc_runner",
+            "tool_state": "{\"n_instances\": \"10\", \"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"6.25e-4\", \"bb\": \"6.25e-4\", \"cc\": \"6.25e-5\", \"thx\": \"0.001\", \"thy\": \"0.001\", \"thz\": \"1.0e-4\", \"emn\": \"1.5e-12\", \"esd\": \"3.0e-13\", \"varfnc\": \"dlavx3\"}",
+            "type": "tool"
+        },
+        "3": {
+            "annotation": "Solve each instance (Map-over collection)",
+            "content_id": "gdps_rfemsolve_thermal",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "instance_archive": {
+                    "id": 2,
+                    "output_name": "output_collection"
+                },
+                "fix_file": {
+                    "id": 1,
+                    "output_name": "output_fix"
+                }
+            },
+            "inputs": [],
+            "label": "Solve MC Instances",
+            "outputs": [
+                {
+                    "name": "output_res",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_ensi",
+                    "type": "tar.gz"
+                }
+            ],
+            "position": {
+                "left": 750,
+                "top": 200
+            },
+            "tool_id": "gdps_rfemsolve_thermal",
+            "tool_state": "{}",
+            "type": "tool"
+        },
+        "4": {
+            "annotation": "Aggregate results and compute statistics",
+            "content_id": "gdps_rfemmc_collect",
+            "errors": null,
+            "id": 4,
+            "input_connections": {
+                "d_file": {
+                    "id": 0,
+                    "output_name": "output_d"
+                },
+                "res_collection": {
+                    "id": 3,
+                    "output_name": "output_res"
+                },
+                "ensi_collection": {
+                    "id": 3,
+                    "output_name": "output_ensi"
+                }
+            },
+            "inputs": [],
+            "label": "Aggregate Results",
+            "outputs": [
+                {
+                    "name": "output_csv",
+                    "type": "csv"
+                },
+                {
+                    "name": "output_json",
+                    "type": "json"
+                },
+                {
+                    "name": "output_png",
+                    "type": "png"
+                }
+            ],
+            "position": {
+                "left": 1000,
+                "top": 200
+            },
+            "tool_id": "gdps_rfemmc_collect",
+            "tool_state": "{}",
+            "type": "tool",
+            "workflow_outputs": [
+                {
+                    "label": "mc_summary",
+                    "output_name": "output_csv"
+                },
+                {
+                    "label": "mc_statistics",
+                    "output_name": "output_json"
+                },
+                {
+                    "label": "mc_histogram",
+                    "output_name": "output_png"
+                }
+            ]
+        }
+    },
+    "uuid": "2f6cdc6a-1cdb-4471-9c2e-63ea1b8a077f",
+    "tags": [
+        "parafem",
+        "rfem",
+        "diffusion",
+        "uq",
+        "gdps",
+        "monte-carlo"
+    ]
+}
