@@ -1,0 +1,243 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Monte Carlo RFEM Diffusion workflow for complex/arbitrary geometries. Generates random field on a structured reference box, then maps it onto an unstructured target mesh.",
+    "format-version": "0.1",
+    "name": "RFEM Diffusion MC - Complex Geometry (Batch)",
+    "steps": {
+        "0": {
+            "annotation": "Import target mesh from CAD (e.g. Abaqus .inp)",
+            "content_id": "gdps_mesh_import",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [],
+            "label": "Import Target Mesh",
+            "outputs": [
+                {
+                    "name": "output_d",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_bnd",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "tool_id": "gdps_mesh_import",
+            "type": "tool"
+        },
+        "1": {
+            "annotation": "Apply Dirichlet BCs to target mesh",
+            "content_id": "gdps_rfembc_thermal",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "d_file": {
+                    "id": 0,
+                    "output_name": "output_d"
+                }
+            },
+            "inputs": [],
+            "label": "Apply BCs to Target",
+            "outputs": [
+                {
+                    "name": "output_fix",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_dat",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 250,
+                "top": 0
+            },
+            "tool_id": "gdps_rfembc_thermal",
+            "tool_state": "{\"val_upstream\": \"4.5e-3\", \"val_downstream\": \"0.0\"}",
+            "type": "tool"
+        },
+        "2": {
+            "annotation": "Generate structured reference box for random field generation",
+            "content_id": "gdps_rfemcube",
+            "errors": null,
+            "id": 2,
+            "input_connections": {},
+            "inputs": [],
+            "label": "RF Reference Box",
+            "outputs": [
+                {
+                    "name": "output_d",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_dat",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 0,
+                "top": 300
+            },
+            "tool_id": "gdps_rfemcube",
+            "tool_state": "{\"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"0.1\", \"bb\": \"0.1\", \"cc\": \"0.1\"}",
+            "type": "tool"
+        },
+        "3": {
+            "annotation": "Generate N random field instances on reference box",
+            "content_id": "gdps_rfemmc_runner",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "d_file": {
+                    "id": 2,
+                    "output_name": "output_d"
+                },
+                "dat_file": {
+                    "id": 2,
+                    "output_name": "output_dat"
+                }
+            },
+            "inputs": [],
+            "label": "Generate RF Collection",
+            "outputs": [
+                {
+                    "name": "output_collection",
+                    "type": "input_collection"
+                }
+            ],
+            "position": {
+                "left": 250,
+                "top": 300
+            },
+            "tool_id": "gdps_rfemmc_runner",
+            "tool_state": "{\"n_instances\": \"10\", \"nels\": \"512\", \"nxe\": \"8\", \"nze\": \"8\"}",
+            "type": "tool"
+        },
+        "4": {
+            "annotation": "Map RF field from reference box to target mesh (Map-over collection)",
+            "content_id": "gdps_rfem_map",
+            "errors": null,
+            "id": 4,
+            "input_connections": {
+                "rf_mat": {
+                    "id": 3,
+                    "output_name": "output_collection"
+                },
+                "target_d": {
+                    "id": 0,
+                    "output_name": "output_d"
+                },
+                "dat_file": {
+                    "id": 1,
+                    "output_name": "output_dat"
+                }
+            },
+            "inputs": [],
+            "label": "Map RF to Target",
+            "outputs": [
+                {
+                    "name": "output_instance",
+                    "type": "tar.gz"
+                },
+                {
+                    "name": "output_res",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 500,
+                "top": 150
+            },
+            "tool_id": "gdps_rfem_map",
+            "tool_state": "{\"nxe\": \"8\", \"nze\": \"8\", \"aa\": \"0.1\", \"bb\": \"0.1\", \"cc\": \"0.1\"}",
+            "type": "tool"
+        },
+        "5": {
+            "annotation": "Solve on target mesh (Map-over collection)",
+            "content_id": "gdps_rfemsolve_thermal",
+            "errors": null,
+            "id": 5,
+            "input_connections": {
+                "instance_archive": {
+                    "id": 4,
+                    "output_name": "output_instance"
+                },
+                "fix_file": {
+                    "id": 1,
+                    "output_name": "output_fix"
+                }
+            },
+            "inputs": [],
+            "label": "Solve MC Instances",
+            "outputs": [
+                {
+                    "name": "output_res",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_ensi",
+                    "type": "tar.gz"
+                }
+            ],
+            "position": {
+                "left": 750,
+                "top": 150
+            },
+            "tool_id": "gdps_rfemsolve_thermal",
+            "tool_state": "{}",
+            "type": "tool"
+        },
+        "6": {
+            "annotation": "Aggregate results",
+            "content_id": "gdps_rfemmc_collect",
+            "errors": null,
+            "id": 6,
+            "input_connections": {
+                "d_file": {
+                    "id": 0,
+                    "output_name": "output_d"
+                },
+                "res_collection": {
+                    "id": 5,
+                    "output_name": "output_res"
+                },
+                "ensi_collection": {
+                    "id": 5,
+                    "output_name": "output_ensi"
+                }
+            },
+            "inputs": [],
+            "label": "Aggregate Results",
+            "outputs": [
+                {
+                    "name": "output_csv",
+                    "type": "csv"
+                },
+                {
+                    "name": "output_json",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 1000,
+                "top": 150
+            },
+            "tool_id": "gdps_rfemmc_collect",
+            "type": "tool"
+        }
+    },
+    "uuid": "84a07638-8d00-41f1-a3eb-7b9327a5b3a3",
+    "tags": [
+        "parafem",
+        "rfem",
+        "diffusion",
+        "uq",
+        "gdps",
+        "monte-carlo",
+        "complex-geometry"
+    ]
+}
