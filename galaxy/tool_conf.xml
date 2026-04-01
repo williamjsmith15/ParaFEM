@@ -20,7 +20,10 @@
         <tool file="tools/gdps_rfemcube/gdps_rfemcube.xml" />
         <tool file="tools/gdps_rfembc_thermal/gdps_rfembc_thermal.xml" />
         <tool file="tools/gdps_rfemfield_thermal/gdps_rfemfield_thermal.xml" />
+        <tool file="tools/gdps_rfem_map/gdps_rfem_map.xml" />
+        <tool file="tools/gdps_rfemmc_runner/gdps_rfemmc_runner.xml" />
         <tool file="tools/gdps_rfemsolve_thermal/gdps_rfemsolve_thermal.xml" />
+        <tool file="tools/gdps_rfemmc_collect/gdps_rfemmc_collect.xml" />
     </section>
     <section id="gdps_postprocessing" name="GDPS Post-Processing">
         <tool file="tools/gdps_postprocess/gdps_postprocess.xml" />

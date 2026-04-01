@@ -1,0 +1,58 @@
+<tool id="gdps_rfemmc_collect" name="RFEM MC Aggregator" version="0.1.0">
+
+    <description>Aggregate results from multiple RFEM instances (QoI extraction + Stats)</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-analytics:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        export MPLBACKEND=Agg &&
+        export HOME=/tmp &&
+        python '$__tool_directory__/gdps_rfemmc_collect.py'
+        --d_file '$d_file'
+        #for $input in $res_collection
+            --res_file '$input.element_identifier' '$input'
+        #end for
+        #for $input in $ensi_collection
+            --ensi_file '$input.element_identifier' '$input'
+        #end for
+        --output_csv '$output_csv'
+        --output_json '$output_json'
+        --output_png '$output_png'
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="d_file" format="txt" label="Shared Mesh geometry (.d)"
+               help="Original mesh used for node coordinates" />
+        <param type="data_collection" name="res_collection" collection_type="list"
+               label="Collection of .res files" help="From map-over solver" />
+        <param type="data_collection" name="ensi_collection" collection_type="list"
+               label="Collection of EnSight archives (.ensi.tar.gz)" help="From map-over solver" />
+    </inputs>
+
+    <outputs>
+        <data format="csv"  name="output_csv"  label="MC Summary (CSV)" />
+        <data format="json" name="output_json" label="MC Statistics (JSON)" />
+        <data format="png"  name="output_png"  label="MC Histogram (PNG)" />
+    </outputs>
+
+    <help>
+Aggregates results from a Monte Carlo ensemble of RFEM instances.
+
+Inputs:
+- Shared Mesh geometry (.d): Used to identify boundary nodes and calculate flux.
+- Collection of .res files: Convergence information for each instance.
+- Collection of EnSight archives: Nodal potential/concentration fields for each instance.
+
+Outputs:
+- MC Summary (CSV): Per-instance Quantity of Interest (downstream flux) and iteration count.
+- MC Statistics (JSON): Aggregate mean, standard deviation, and range.
+- MC Histogram (PNG): Visualization of the flux distribution.
+
+Flux extraction: The tool calculates the average concentration at the first layer of
+interior nodes and divides by the element thickness (dz) to get a proxy for the
+downstream flux (J).
+    </help>
+
+</tool>

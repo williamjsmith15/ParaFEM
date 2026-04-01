@@ -1,0 +1,72 @@
+<tool id="gdps_rfemmc_runner" name="RFEM MC Batch Runner" version="0.1.0">
+
+    <description>Generate a collection of spatially correlated random field instances</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-rfem:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        mkdir -p run outputs && cd run &&
+        cp '$d_file'   model.d &&
+        cp '$dat_file' model.dat &&
+        for i in \$(seq -f "%03g" 1 $n_instances); do
+            printf '%s\n' 'sim3de' '1' '$nels $nxe $nze' '$aa $bb $cc' '$thx $thy $thz' '$emn $esd' '$varfnc' '0.3' > rfem.rf &&
+            rfemfield_thermal rfem model \${i} > /dev/null 2>&1;
+            INST="model-\${i}";
+            if [ -f "\${INST}.d" ] && [ -f "\${INST}.dat" ] && [ -f "\${INST}.mat" ]; then
+                tar czf "../outputs/model-\${i}.tar.gz" "\${INST}.d" "\${INST}.dat" "\${INST}.mat";
+            else
+                echo "rfemfield_thermal: failed to produce files for instance \${i}" >&2;
+            fi;
+        done
+    ]]></command>
+
+    <inputs>
+        <param type="data"    name="d_file"      label="Template Mesh geometry (.d)"
+               help="From RFEM Mesh Generator" />
+        <param type="data"    name="dat_file"     label="Template Control data (.dat)"
+               help="From rfembc_thermal (updated with BCs)" />
+        <param type="integer" name="n_instances"  value="10" min="1" max="500"
+               label="Number of instances (N)" />
+        
+        <param type="integer" name="nels"  value="512"  min="1" label="RF grid total elements" />
+        <param type="integer" name="nxe"   value="8"    min="1" label="RF grid elements in X" />
+        <param type="integer" name="nze"   value="8"    min="1" label="RF grid elements in Z" />
+        <param type="float"   name="aa"    value="0.1"  label="RF element size X (m)" />
+        <param type="float"   name="bb"    value="0.1"  label="RF element size Y (m)" />
+        <param type="float"   name="cc"    value="0.1"  label="RF element size Z (m)" />
+        <param type="float"   name="thx"   value="0.3"  label="Correlation length X (m)" />
+        <param type="float"   name="thy"   value="0.3"  label="Correlation length Y (m)" />
+        <param type="float"   name="thz"   value="0.3"  label="Correlation length Z (m)" />
+        <param type="float"   name="emn"   value="1e-9" label="Mean D or k (log-normal mean)"
+               help="Mean diffusivity [m^2/s] or conductivity [W/(m*K)]" />
+        <param type="float"   name="esd"   value="0.5"  label="Std-dev of D or k"
+               help="Log-normal standard deviation" />
+        <param type="select"  name="varfnc" label="Variogram function">
+            <option value="dlavx3" selected="true">Locally averaged exponential (dlavx3)</option>
+            <option value="dlsep3">Separable exponential (dlsep3)</option>
+            <option value="dlspx3">Separable power (dlspx3)</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <collection name="output_collection" type="list" label="RFEM instances">
+            <discover_datasets pattern="model-(?P&lt;designation&gt;[^/]+)\.tar\.gz"
+                               directory="outputs/"
+                               format="tar.gz" />
+        </collection>
+    </outputs>
+
+    <help>
+Runs the RFEM Thermal Field Generator in a loop to produce a collection of independent
+random field realizations.
+
+Each realization generates instance-specific mesh (.d), control (.dat), and
+material (.mat) files, which are bundled into a tar.gz archive.
+
+This tool produces a **Dataset Collection** which is intended to be used with the
+"map-over" feature in Galaxy to run the RFEM Thermal Solver on all instances in parallel.
+    </help>
+
+</tool>
