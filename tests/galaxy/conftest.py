@@ -147,3 +147,37 @@ def permeation_transient_workflow_id(gi):
         time.sleep(5)
 
     pytest.fail("Transient Hydrogen Permeation workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def rfem_mc_workflow_id(gi):
+    """Find the RFEM Diffusion MC workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        try:
+            workflows = gi.workflows.get_workflows(published=True)
+            for wf in workflows:
+                if "RFEM Diffusion MC - GDPS Permeation (Batch)" == wf["name"]:
+                    return wf["id"]
+        except Exception:
+            pass
+        time.sleep(5)
+
+    pytest.fail("RFEM Diffusion MC workflow not found (bootstrap may have failed)")
+
+
+@pytest.fixture(scope="session")
+def rfem_mc_complex_workflow_id(gi):
+    """Find the RFEM Diffusion MC Complex workflow."""
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        try:
+            workflows = gi.workflows.get_workflows(published=True)
+            for wf in workflows:
+                if "RFEM Diffusion MC - Complex Geometry (Batch)" == wf["name"]:
+                    return wf["id"]
+        except Exception:
+            pass
+        time.sleep(5)
+
+    pytest.fail("RFEM Diffusion MC Complex workflow not found (bootstrap may have failed)")

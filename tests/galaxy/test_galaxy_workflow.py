@@ -34,6 +34,13 @@ EXPECTED_TOOLS = [
     "gdps_sensor_to_bcs",
     "gdps_sievert_bc",
     "gdps_compute_diffusivity",
+    "gdps_rfemcube",
+    "gdps_rfembc_thermal",
+    "gdps_rfemfield_thermal",
+    "gdps_rfemsolve_thermal",
+    "gdps_rfemmc_runner",
+    "gdps_rfemmc_collect",
+    "gdps_rfem_map",
 ]
 
 WORKFLOW_TIMEOUT = 600  # 10 minutes max for full pipeline
