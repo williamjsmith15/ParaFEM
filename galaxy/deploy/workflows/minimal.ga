@@ -1,0 +1,25 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Minimal test",
+    "format-version": "0.1",
+    "name": "Minimal Test Workflow",
+    "steps": {
+        "0": {
+            "annotation": "",
+            "content_id": "gdps_rfemcube",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [],
+            "label": "Step 1",
+            "outputs": [
+                {"name": "output_d",   "type": "txt"},
+                {"name": "output_dat", "type": "txt"}
+            ],
+            "position": {"left": 0, "top": 0},
+            "tool_id": "gdps_rfemcube",
+            "tool_state": "{}",
+            "type": "tool"
+        }
+    }
+}
