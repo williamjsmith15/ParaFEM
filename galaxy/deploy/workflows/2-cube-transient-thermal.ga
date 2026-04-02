@@ -1,8 +1,105 @@
 {
     "a_galaxy_workflow": "true",
     "annotation": "Transient thermal analysis: box mesh generation, BC + material assignment, p124 solver, VTU time series output.",
+    "comments": [
+        {
+            "child_steps": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15
+            ],
+            "color": "none",
+            "data": {
+                "title": "Inputs"
+            },
+            "id": 0,
+            "position": [
+                0,
+                0
+            ],
+            "size": [
+                240,
+                1710
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                17,
+                16
+            ],
+            "color": "red",
+            "data": {
+                "title": "Pre-Processing"
+            },
+            "id": 1,
+            "position": [
+                340,
+                350
+            ],
+            "size": [
+                480,
+                819
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                18
+            ],
+            "color": "orange",
+            "data": {
+                "title": "Simulation"
+            },
+            "id": 2,
+            "position": [
+                1000,
+                530
+            ],
+            "size": [
+                240,
+                390
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                19
+            ],
+            "color": "green",
+            "data": {
+                "title": "Post-Processing"
+            },
+            "id": 3,
+            "position": [
+                1270,
+                900
+            ],
+            "size": [
+                240,
+                345.9
+            ],
+            "type": "frame"
+        }
+    ],
     "format-version": "0.1",
-    "name": "Transient Thermal (ParaFEM p124)",
+    "name": "Cube Transient Thermal",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
     "steps": {
         "0": {
             "annotation": "Number of elements along X axis",
@@ -13,18 +110,18 @@
             "inputs": [
                 {
                     "description": "Number of elements along X axis",
-                    "name": "nxe"
+                    "name": "Elements X (nxe)"
                 }
             ],
             "label": "Elements X (nxe)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 0
+                "left": 20,
+                "top": 40
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 5, \"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "80245c5f-769b-4613-8343-95b91d54ef56",
@@ -40,18 +137,18 @@
             "inputs": [
                 {
                     "description": "Number of elements along Y axis",
-                    "name": "nye"
+                    "name": "Elements Y (nye)"
                 }
             ],
             "label": "Elements Y (nye)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 60
+                "left": 20,
+                "top": 140
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 5, \"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "24c9afbd-ed62-4738-a615-b517848dd132",
@@ -67,18 +164,18 @@
             "inputs": [
                 {
                     "description": "Number of elements along Z axis",
-                    "name": "nze"
+                    "name": "Elements Z (nze)"
                 }
             ],
             "label": "Elements Z (nze)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 120
+                "left": 20,
+                "top": 240
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 5, \"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "f9ce1f70-9ccb-4f51-be7c-239c9f2d3104",
@@ -93,19 +190,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Mesh X dimension (m)",
-                    "name": "dim_x"
+                    "description": "Mesh X dimension in metres",
+                    "name": "X dimension (m)"
                 }
             ],
             "label": "X dimension (m)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 180
+                "left": 20,
+                "top": 340
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 1.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "67b12f8d-48af-4ecb-b4c5-15067a79f889",
@@ -120,19 +217,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Mesh Y dimension (m)",
-                    "name": "dim_y"
+                    "description": "Mesh Y dimension in metres",
+                    "name": "Y dimension (m)"
                 }
             ],
             "label": "Y dimension (m)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 240
+                "left": 20,
+                "top": 440
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 1.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "ed1b846a-e775-4042-8b6d-27243801cdc1",
@@ -147,19 +244,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Mesh Z dimension (m)",
-                    "name": "dim_z"
+                    "description": "Mesh Z dimension in metres",
+                    "name": "Z dimension (m)"
                 }
             ],
             "label": "Z dimension (m)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 300
+                "left": 20,
+                "top": 540
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 1.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "265ad19c-14f5-47f7-9293-1956d30e0edd",
@@ -174,19 +271,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Thermal conductivity kx (W/m.K)",
-                    "name": "kx"
+                    "description": "Thermal conductivity in X (W/m.K)",
+                    "name": "Conductivity kx (W/m.K)"
                 }
             ],
             "label": "Conductivity kx (W/m.K)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 380
+                "left": 20,
+                "top": 640
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 50.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "f2f53907-4152-4ed4-8ab2-96e7a45ce17e",
@@ -201,19 +298,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Thermal conductivity ky (W/m.K)",
-                    "name": "ky"
+                    "description": "Thermal conductivity in Y (W/m.K)",
+                    "name": "Conductivity ky (W/m.K)"
                 }
             ],
             "label": "Conductivity ky (W/m.K)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 440
+                "left": 20,
+                "top": 740
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 50.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "7fb84959-e006-4bac-b4f3-ac7dcdb404c9",
@@ -228,19 +325,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Thermal conductivity kz (W/m.K)",
-                    "name": "kz"
+                    "description": "Thermal conductivity in Z (W/m.K)",
+                    "name": "Conductivity kz (W/m.K)"
                 }
             ],
             "label": "Conductivity kz (W/m.K)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 500
+                "left": 20,
+                "top": 840
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 50.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "95d88be7-ded8-46d5-b19f-9e8b225d6b69",
@@ -255,19 +352,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Density (kg/m3)",
-                    "name": "rho"
+                    "description": "Material density (kg/m3)",
+                    "name": "Density rho (kg/m3)"
                 }
             ],
             "label": "Density rho (kg/m3)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 560
+                "left": 20,
+                "top": 950
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 7800.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 7800.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "dfbe3c0b-4715-4c97-a533-7f1a55a121ef",
@@ -283,18 +380,18 @@
             "inputs": [
                 {
                     "description": "Specific heat capacity (J/kg.K)",
-                    "name": "cp"
+                    "name": "Specific heat cp (J/kg.K)"
                 }
             ],
             "label": "Specific heat cp (J/kg.K)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 620
+                "left": 20,
+                "top": 1060
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 500.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 500.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "20a99278-94e3-4a2f-984b-cc8a6b16ce6a",
@@ -309,19 +406,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Initial temperature (K)",
-                    "name": "val0"
+                    "description": "Uniform initial temperature (K)",
+                    "name": "Initial temperature (K)"
                 }
             ],
             "label": "Initial temperature (K)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 700
+                "left": 20,
+                "top": 1170
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 293.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 293.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "23cde7af-aa39-43a4-b533-13f6dc663429",
@@ -336,19 +433,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Time step size (s)",
-                    "name": "dtim"
+                    "description": "Duration of each time step (seconds)",
+                    "name": "Time step dtim (s)"
                 }
             ],
             "label": "Time step dtim (s)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 760
+                "left": 20,
+                "top": 1280
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 500.0, \"parameter_type\": \"float\", \"optional\": false}",
+            "tool_state": "{\"default\": 500.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "18593bf6-28cd-4cfc-988d-ee166ad02a07",
@@ -363,19 +460,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Number of time steps",
-                    "name": "nstep"
+                    "description": "Total number of time steps to simulate",
+                    "name": "Number of steps (nstep)"
                 }
             ],
             "label": "Number of steps (nstep)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 820
+                "left": 20,
+                "top": 1390
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 100, \"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_state": "{\"default\": 100, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "5822d821-61d8-46e9-9077-3b809a74c782",
@@ -390,19 +487,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Output every N steps",
-                    "name": "npri"
+                    "description": "Write output every N time steps",
+                    "name": "Output interval (npri)"
                 }
             ],
             "label": "Output interval (npri)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 880
+                "left": 20,
+                "top": 1500
             },
             "tool_id": null,
-            "tool_state": "{\"default\": 10, \"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_state": "{\"default\": 10, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "4d45c49f-4a61-4447-a3a1-1967b340deaf",
@@ -417,19 +514,19 @@
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "Temperature zone configuration (JSON)",
-                    "name": "zone_config"
+                    "description": "JSON array of temperature zones: [{axis_min, axis_max, temperature}, ...]",
+                    "name": "Temperature zones (JSON)"
                 }
             ],
             "label": "Temperature zones (JSON)",
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 940
+                "left": 20,
+                "top": 1610
             },
             "tool_id": null,
-            "tool_state": "{\"default\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 500.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]\", \"parameter_type\": \"text\", \"optional\": false}",
+            "tool_state": "{\"default\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 500.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]\", \"validators\": [], \"parameter_type\": \"text\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "ed905ff0-661d-440f-a546-3f6a058e1afd",
@@ -442,18 +539,6 @@
             "errors": null,
             "id": 16,
             "input_connections": {
-                "nxe": {
-                    "id": 0,
-                    "output_name": "output"
-                },
-                "nye": {
-                    "id": 1,
-                    "output_name": "output"
-                },
-                "nze": {
-                    "id": 2,
-                    "output_name": "output"
-                },
                 "dim_x": {
                     "id": 3,
                     "output_name": "output"
@@ -464,6 +549,18 @@
                 },
                 "dim_z": {
                     "id": 5,
+                    "output_name": "output"
+                },
+                "nxe": {
+                    "id": 0,
+                    "output_name": "output"
+                },
+                "nye": {
+                    "id": 1,
+                    "output_name": "output"
+                },
+                "nze": {
+                    "id": 2,
                     "output_name": "output"
                 }
             },
@@ -481,12 +578,12 @@
                 }
             ],
             "position": {
-                "left": 300,
-                "top": 200
+                "left": 360,
+                "top": 390
             },
             "post_job_actions": {},
             "tool_id": "gdps_meshgen_box",
-            "tool_state": "{\"nxe\": {\"__class__\": \"ConnectedValue\"}, \"nye\": {\"__class__\": \"ConnectedValue\"}, \"nze\": {\"__class__\": \"ConnectedValue\"}, \"dim_x\": {\"__class__\": \"ConnectedValue\"}, \"dim_y\": {\"__class__\": \"ConnectedValue\"}, \"dim_z\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"dim_x\": {\"__class__\": \"ConnectedValue\"}, \"dim_y\": {\"__class__\": \"ConnectedValue\"}, \"dim_z\": {\"__class__\": \"ConnectedValue\"}, \"nxe\": {\"__class__\": \"ConnectedValue\"}, \"nye\": {\"__class__\": \"ConnectedValue\"}, \"nze\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "226d4953-c208-4763-8a0a-5497bbabcad8",
@@ -499,9 +596,13 @@
             "errors": null,
             "id": 17,
             "input_connections": {
-                "mesh_d": {
-                    "id": 16,
-                    "output_name": "output_d"
+                "cp": {
+                    "id": 10,
+                    "output_name": "output"
+                },
+                "dtim": {
+                    "id": 12,
+                    "output_name": "output"
                 },
                 "kx": {
                     "id": 6,
@@ -515,28 +616,24 @@
                     "id": 8,
                     "output_name": "output"
                 },
-                "rho": {
-                    "id": 9,
-                    "output_name": "output"
+                "mesh_d": {
+                    "id": 16,
+                    "output_name": "output_d"
                 },
-                "cp": {
-                    "id": 10,
-                    "output_name": "output"
-                },
-                "val0": {
-                    "id": 11,
-                    "output_name": "output"
-                },
-                "dtim": {
-                    "id": 12,
+                "npri": {
+                    "id": 14,
                     "output_name": "output"
                 },
                 "nstep": {
                     "id": 13,
                     "output_name": "output"
                 },
-                "npri": {
-                    "id": 14,
+                "rho": {
+                    "id": 9,
+                    "output_name": "output"
+                },
+                "val0": {
+                    "id": 11,
                     "output_name": "output"
                 },
                 "zone_config": {
@@ -570,12 +667,12 @@
                 }
             ],
             "position": {
-                "left": 560,
-                "top": 400
+                "left": 600,
+                "top": 610
             },
             "post_job_actions": {},
             "tool_id": "gdps_bc_transient",
-            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": {\"__class__\": \"ConnectedValue\"}, \"ky\": {\"__class__\": \"ConnectedValue\"}, \"kz\": {\"__class__\": \"ConnectedValue\"}, \"rho\": {\"__class__\": \"ConnectedValue\"}, \"cp\": {\"__class__\": \"ConnectedValue\"}, \"val0\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"nstep\": {\"__class__\": \"ConnectedValue\"}, \"npri\": {\"__class__\": \"ConnectedValue\"}, \"theta\": \"0.5\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"zone_config\": {\"__class__\": \"ConnectedValue\"}, \"bc_mode\": {\"mode\": \"zone\", \"bc_axis\": \"z\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bc_mode\": {\"mode\": \"zone\", \"__current_case__\": 0, \"bc_axis\": \"z\"}, \"cp\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"kx\": {\"__class__\": \"ConnectedValue\"}, \"ky\": {\"__class__\": \"ConnectedValue\"}, \"kz\": {\"__class__\": \"ConnectedValue\"}, \"limit\": \"2000\", \"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"npri\": {\"__class__\": \"ConnectedValue\"}, \"nstep\": {\"__class__\": \"ConnectedValue\"}, \"rho\": {\"__class__\": \"ConnectedValue\"}, \"theta\": \"0.5\", \"tol\": \"1e-06\", \"val0\": {\"__class__\": \"ConnectedValue\"}, \"zone_config\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "5202c6ee-1c2a-4e13-b389-8051bcd385bb",
@@ -588,21 +685,21 @@
             "errors": null,
             "id": 18,
             "input_connections": {
-                "d_file": {
-                    "id": 17,
-                    "output_name": "output_d"
-                },
                 "bnd_file": {
                     "id": 17,
                     "output_name": "output_bnd"
                 },
-                "fix_file": {
+                "d_file": {
                     "id": 17,
-                    "output_name": "output_fix"
+                    "output_name": "output_d"
                 },
                 "dat_file": {
                     "id": 17,
                     "output_name": "output_dat"
+                },
+                "fix_file": {
+                    "id": 17,
+                    "output_name": "output_fix"
                 },
                 "mat_file": {
                     "id": 17,
@@ -620,15 +717,19 @@
                 {
                     "name": "output_ensi",
                     "type": "tar.gz"
+                },
+                {
+                    "name": "output_chk",
+                    "type": "chk"
                 }
             ],
             "position": {
-                "left": 820,
-                "top": 400
+                "left": 1020,
+                "top": 570
             },
             "post_job_actions": {},
             "tool_id": "gdps_transient_thermal",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"bcs_file\": null, \"ic_type\": {\"mode\": \"uniform\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": null, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ic_type\": {\"mode\": \"uniform\", \"__current_case__\": 0}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "3f7158c9-f2d1-4bfc-bcb2-c428b45c1c7b",
@@ -647,28 +748,33 @@
             "errors": null,
             "id": 19,
             "input_connections": {
-                "d_file": {
-                    "id": 17,
-                    "output_name": "output_d"
-                },
                 "bnd_file": {
                     "id": 17,
                     "output_name": "output_bnd"
                 },
-                "fix_file": {
+                "d_file": {
                     "id": 17,
-                    "output_name": "output_fix"
+                    "output_name": "output_d"
+                },
+                "dtim": {
+                    "id": 12,
+                    "output_name": "output"
                 },
                 "ensi_tarball": {
                     "id": 18,
                     "output_name": "output_ensi"
                 },
-                "dtim": {
-                    "id": 12,
-                    "output_name": "output"
+                "fix_file": {
+                    "id": 17,
+                    "output_name": "output_fix"
                 }
             },
-            "inputs": [],
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "bcs_file"
+                }
+            ],
             "label": "VTU Time Series",
             "name": "ParaFEM to VTU (Transient)",
             "outputs": [
@@ -678,12 +784,12 @@
                 }
             ],
             "position": {
-                "left": 1100,
-                "top": 400
+                "left": 1290,
+                "top": 940
             },
             "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu_transient",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "6416c793-8c4b-4662-aaec-29e9484ee22c",
@@ -700,8 +806,9 @@
     "tags": [
         "parafem",
         "thermal",
-        "transient"
+        "transient",
+        "cube"
     ],
-    "uuid": "c817376a-cfe5-4d29-b3ae-b145db746421",
-    "version": 0
+    "uuid": "2a305eb8-b5ca-460d-bc53-c98bf4b4e291",
+    "version": 2
 }
