@@ -1,0 +1,74 @@
+<tool id="gdps_permeation_flux" name="Permeation Flux Calculator" version="0.1.0">
+
+    <description>Compute downstream gas flow rate from FEM diffusion solution</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-vtu:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python3 '$__tool_directory__/gdps_permeation_flux.py'
+            --mesh_d '$mesh_d'
+            --ensi_tarball '$ensi_tarball'
+            --mat_file '$mat_file'
+            --axis '$axis'
+            --face '$face'
+            --temp_ambient '$temp_ambient'
+            --jobname job
+            --output '$output_report'
+            2>&1
+    ]]></command>
+
+    <inputs>
+        <param type="data" name="mesh_d" label="Mesh geometry (.d)"
+               help="Modified .d file from Diffusivity Field tool (with per-element material IDs)" />
+        <param type="data" name="ensi_tarball" label="Concentration field (.tar.gz)"
+               help="EnSight tarball from diffusion solver (gdps_transient_thermal)" />
+        <param type="data" name="mat_file" label="Diffusivity field (.mat)"
+               help=".mat file from Diffusivity Field tool — per-element D values" />
+        <param type="select" name="axis" label="Permeation axis"
+               help="Axis along which hydrogen permeates through the membrane">
+            <option value="z" selected="true">Z</option>
+            <option value="x">X</option>
+            <option value="y">Y</option>
+        </param>
+        <param type="select" name="face" label="Downstream face">
+            <option value="max" selected="true">Maximum (far end along axis)</option>
+            <option value="min">Minimum (near end along axis)</option>
+        </param>
+        <param type="float" name="temp_ambient" value="298.15" label="Gas measurement temperature (K)"
+               help="Temperature at which the gas flow is measured (usually room temperature ~298 K). Used to convert mol/s to Pa.m3/s and mbar.L/s." />
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output_report" label="Permeation flux report (.txt)" />
+    </outputs>
+
+    <help>
+Computes the total gas permeation flow rate through the downstream face of the
+membrane from a steady-state FEM diffusion solution.
+
+The flux is integrated as J = -D * dC/dn over all elements on the downstream
+face, giving the total molar flow rate in mol/s. This is then converted to
+Pa.m3/s and mbar.L/s for direct comparison with mass spectrometer output.
+
+**Inputs**
+
+- Mesh (.d): the modified mesh from the Diffusivity Field tool
+- Concentration field: EnSight tarball from the diffusion solver
+- Diffusivity (.mat): per-element D(T) field from the Diffusivity Field tool
+
+**Downstream face**
+
+Set Permeation axis and Downstream face to match your mesh orientation.
+For a membrane aligned along Z with the high-pressure face at z=0 and the
+low-pressure (vacuum) face at z=L, use axis=Z and face=Maximum.
+
+**Output**
+
+A text report containing:
+
+- Total flow rate in mol/s, Pa.m3/s, and mbar.L/s
+- Flux density in mol/m2/s (normalised by face area)
+    </help>
+</tool>
