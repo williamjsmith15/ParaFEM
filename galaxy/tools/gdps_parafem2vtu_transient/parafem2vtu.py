@@ -120,6 +120,42 @@ def parse_ensi_vector(filepath, nn):
     return values
 
 
+def parse_bcs_file(filepath):
+    """Parse a ParaFEM .bcs schedule file.
+
+    Returns dict {step_number: {node_id: value}} listing BC changes at each step.
+    Lines with one token are step numbers; lines with three tokens are node entries.
+    """
+    schedule = {}
+    current_step = None
+    with open(filepath, 'r') as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) == 1:
+                current_step = int(parts[0])
+                schedule[current_step] = {}
+            elif len(parts) == 3 and current_step is not None:
+                node_id = int(parts[0])
+                value = float(parts[2])
+                schedule[current_step][node_id] = value
+    return schedule
+
+
+def get_bc_at_step(initial_bc, bcs_schedule, step_num):
+    """Return {node_id: value} of active BCs at step_num.
+
+    Starts from initial_bc (from .fix) and applies all .bcs updates with
+    step <= step_num in order — exactly what the solver received.
+    """
+    current = dict(initial_bc)
+    for sched_step in sorted(bcs_schedule.keys()):
+        if sched_step <= step_num:
+            current.update(bcs_schedule[sched_step])
+        else:
+            break
+    return current
+
+
 def parse_bnd_file(filepath, nn):
     """Parse .bnd file. Returns per-node flag array (1=restrained, 0=free)."""
     flags = [0.0] * nn
@@ -313,8 +349,12 @@ def main():
                         help='Time step size (s) from p124 .dat — used for PVD timeline labels')
     parser.add_argument('--ensi_tarball', default=None,
                         help='Tarball of .ensi.* files (alternative to --ensi_dir)')
+    parser.add_argument('--bcs', default=None,
+                        help='ParaFEM .bcs BC schedule file (optional) — adds time-varying BCValue field')
     parser.add_argument('--jobname', default='job',
                         help='Job name prefix for EnSight files')
+    parser.add_argument('--field_name', default=None,
+                        help='Override the field label in ParaView output (e.g. Concentration)')
     parser.add_argument('--output', required=True,
                         help='Output .vtu file (or .pvd for time-varying)')
     args = parser.parse_args()
@@ -337,12 +377,23 @@ def main():
             point_data['BoundaryNodes'] = bnd_flags
             print(f"  Boundary nodes: {sum(1 for v in bnd_flags if v > 0)}")
 
-    # Fixed freedom values
+    # Fixed freedom values and initial BC dict (keyed by 1-based node id)
+    initial_bc = {}
     if args.fix:
         fix_vals = parse_fix_file(args.fix, nn)
         if any(v == v for v in fix_vals):  # at least one non-NaN
             point_data['FixedFreedoms'] = fix_vals
-            print(f"  Fixed freedoms: {sum(1 for v in fix_vals if v == v)}")
+            sorted_node_ids = sorted(nodes.keys())
+            initial_bc = {sorted_node_ids[i]: fix_vals[i]
+                          for i in range(nn) if fix_vals[i] == fix_vals[i]}
+            print(f"  Fixed freedoms: {len(initial_bc)}")
+
+    # BC schedule
+    bcs_schedule = {}
+    if args.bcs:
+        bcs_schedule = parse_bcs_file(args.bcs)
+        print(f"  BC schedule: {len(bcs_schedule)} change points at steps "
+              f"{sorted(bcs_schedule.keys())}")
 
     # Material IDs (from element data)
     mat_ids = [elements[eid]['mat_id'] for eid in sorted_elem_ids]
@@ -365,7 +416,7 @@ def main():
         print(f"  Found EnSight variables: {list(ensi_files.keys())}")
 
         for var_type, step_paths in ensi_files.items():
-            var_name = ENSI_VAR_NAMES.get(var_type, var_type)
+            var_name = args.field_name if args.field_name else ENSI_VAR_NAMES.get(var_type, var_type)
             is_vector = ENSI_VAR_IS_VECTOR.get(var_type, False)
 
             if len(step_paths) == 1:
@@ -389,6 +440,7 @@ def main():
                 pvd_path = output_base + '.pvd'
                 pvd_entries = []
 
+                sorted_node_ids = sorted(nodes.keys())
                 for step_num, path in step_paths:
                     time_val = step_num * args.dtim if args.dtim is not None else step_num
                     if is_vector:
@@ -399,6 +451,13 @@ def main():
                     step_point_data = dict(point_data)
                     if len(data) == nn:
                         step_point_data[var_name] = data
+
+                    if bcs_schedule:
+                        bc_now = get_bc_at_step(initial_bc, bcs_schedule, step_num)
+                        step_point_data['BCValue'] = [
+                            bc_now.get(nid, float('nan'))
+                            for nid in sorted_node_ids
+                        ]
 
                     step_vtu = f"{output_base}_{step_num:06d}.vtu"
                     root = build_vtu_tree(nodes, elements, nod,

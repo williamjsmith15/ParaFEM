@@ -34,6 +34,9 @@
                 --ensi_dir .
             #end if
             --jobname job
+            #if str($field_name).strip() != ""
+                --field_name '$field_name'
+            #end if
             --output result.vtu
             2>&1 &&
 
@@ -49,6 +52,18 @@
                help="ParaFEM .fix file — adds FixedFreedoms field to output" />
         <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)" optional="true"
                help="Tarball of .ensi.NDPTL-* or .ensi.DISPL-* files from solver" />
+        <param type="select" name="field_name" label="Output field">
+            <option value="" selected="true">Default (Temperature / Potential / Displacement)</option>
+            <option value="Temperature (K)">Temperature (K)</option>
+            <option value="Temperature (degC)">Temperature (degC)</option>
+            <option value="Concentration (mol/m3)">Concentration (mol/m3)</option>
+            <option value="Concentration (at/m3)">Concentration (at/m3)</option>
+            <option value="Concentration (wppm)">Concentration (wppm)</option>
+            <option value="Potential (V)">Potential (V)</option>
+            <option value="Pressure (Pa)">Pressure (Pa)</option>
+            <option value="Displacement (m)">Displacement (m)</option>
+            <option value="Displacement (mm)">Displacement (mm)</option>
+        </param>
     </inputs>
 
     <outputs>

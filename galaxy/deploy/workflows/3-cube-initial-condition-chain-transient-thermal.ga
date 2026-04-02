@@ -816,6 +816,22 @@
                 {
                     "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
                     "name": "bcs_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "bnd_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "d_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "ensi_tarball"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "fix_file"
                 }
             ],
             "label": "ParaFEM to VTU 1",
@@ -832,7 +848,7 @@
             },
             "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu_transient",
-            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"RuntimeValue\"}, \"d_file\": {\"__class__\": \"RuntimeValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"RuntimeValue\"}, \"field_name\": \"Temperature (K)\", \"fix_file\": {\"__class__\": \"RuntimeValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "f509b994-bd19-4fb5-85fd-ef4b31a9c225",
@@ -953,6 +969,22 @@
                 {
                     "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
                     "name": "bcs_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "bnd_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "d_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "ensi_tarball"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "fix_file"
                 }
             ],
             "label": "ParaFEM to VTU 2",
@@ -969,7 +1001,7 @@
             },
             "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu_transient",
-            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"RuntimeValue\"}, \"d_file\": {\"__class__\": \"RuntimeValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"RuntimeValue\"}, \"field_name\": \"Temperature (K)\", \"fix_file\": {\"__class__\": \"RuntimeValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "919e6a24-05bc-4d20-8828-df35460c32a7",
@@ -1033,6 +1065,6 @@
         "cube",
         "initial-conditions"
     ],
-    "uuid": "966a6838-b6b1-4103-8e1d-cff12efe91a4",
-    "version": 10
+    "uuid": "c693db41-9a39-4267-be06-f429e17637d1",
+    "version": 11
 }

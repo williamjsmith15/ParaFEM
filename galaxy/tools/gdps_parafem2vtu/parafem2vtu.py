@@ -315,6 +315,8 @@ def main():
                         help='Tarball of .ensi.* files (alternative to --ensi_dir)')
     parser.add_argument('--jobname', default='job',
                         help='Job name prefix for EnSight files')
+    parser.add_argument('--field_name', default=None,
+                        help='Override the field label in ParaView output (e.g. Concentration)')
     parser.add_argument('--output', required=True,
                         help='Output .vtu file (or .pvd for time-varying)')
     args = parser.parse_args()
@@ -365,7 +367,7 @@ def main():
         print(f"  Found EnSight variables: {list(ensi_files.keys())}")
 
         for var_type, step_paths in ensi_files.items():
-            var_name = ENSI_VAR_NAMES.get(var_type, var_type)
+            var_name = args.field_name if args.field_name else ENSI_VAR_NAMES.get(var_type, var_type)
             is_vector = ENSI_VAR_IS_VECTOR.get(var_type, False)
 
             if len(step_paths) == 1:

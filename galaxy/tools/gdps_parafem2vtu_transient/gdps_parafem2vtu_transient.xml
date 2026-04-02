@@ -18,6 +18,10 @@
             cp '$fix_file' job.fix &&
         #end if
 
+        #if str($bcs_file) != "None"
+            cp '$bcs_file' job.bcs &&
+        #end if
+
         tar xzf '$ensi_tarball' &&
 
         python3 '$__tool_directory__/parafem2vtu.py'
@@ -28,9 +32,15 @@
             #if str($fix_file) != "None"
                 --fix job.fix
             #end if
+            #if str($bcs_file) != "None"
+                --bcs job.bcs
+            #end if
             --ensi_dir .
             --dtim '$dtim'
             --jobname job
+            #if str($field_name).strip() != ""
+                --field_name '$field_name'
+            #end if
             --output result.vtu
             2>&1 &&
 
@@ -44,8 +54,22 @@
                help="ParaFEM .bnd file — adds BoundaryNodes field to output" />
         <param type="data" name="fix_file" label="Fixed freedoms (.fix)" optional="true"
                help="ParaFEM .fix file — adds FixedFreedoms field to output" />
+        <param type="data" name="bcs_file" label="BC schedule (.bcs)" optional="true"
+               help="ParaFEM .bcs file — adds BCValue field per timestep showing boundary condition evolution" />
         <param type="data" name="ensi_tarball" label="Solver EnSight output (.tar.gz)"
                help="Tarball of .ensi.NDTTR-* files from transient solver" />
+        <param type="select" name="field_name" label="Output field">
+            <option value="" selected="true">Default (Temperature / Potential / Displacement)</option>
+            <option value="Temperature (K)">Temperature (K)</option>
+            <option value="Temperature (degC)">Temperature (degC)</option>
+            <option value="Concentration (mol/m3)">Concentration (mol/m3)</option>
+            <option value="Concentration (at/m3)">Concentration (at/m3)</option>
+            <option value="Concentration (wppm)">Concentration (wppm)</option>
+            <option value="Potential (V)">Potential (V)</option>
+            <option value="Pressure (Pa)">Pressure (Pa)</option>
+            <option value="Displacement (m)">Displacement (m)</option>
+            <option value="Displacement (mm)">Displacement (mm)</option>
+        </param>
         <param type="float" name="dtim" value="1.0" label="Time step size (s)"
                help="Time step from the solver .dat file. Sets real-time labels on the ParaView timeline." />
     </inputs>
@@ -65,6 +89,7 @@ Outputs a .tar.gz containing:
 Each .vtu also includes (if provided):
 - BoundaryNodes (from .bnd)
 - FixedFreedoms (from .fix)
+- BCValue (from .fix + .bcs) — boundary condition value at each node for that timestep; NaN for unconstrained nodes
 - MaterialID (if multiple materials)
 
 The dtim parameter sets the real-time labels on the ParaView timeline
