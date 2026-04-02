@@ -8,6 +8,7 @@ gas flow rate in units comparable to mass spectrometer output.
 """
 
 import argparse
+import csv
 import glob
 import math
 import os
@@ -95,6 +96,48 @@ def find_ensi_files(directory, jobname):
     return found
 
 
+def parse_ensi_case(directory, jobname):
+    """Parse .ensi.case and return {step_number: simulation_time}."""
+    case_path = os.path.join(directory, f"{jobname}.ensi.case")
+    if not os.path.exists(case_path):
+        return {}
+
+    step_times = {}
+    in_time = False
+    start_num = 1
+    increment = 1
+    n_steps = 0
+    time_values = []
+
+    with open(case_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line == 'TIME':
+                in_time = True
+                continue
+            if not in_time:
+                continue
+            if line.startswith('number of steps'):
+                n_steps = int(line.split(':')[1].strip())
+            elif line.startswith('filename start number'):
+                start_num = int(line.split(':')[1].strip())
+            elif line.startswith('filename increment'):
+                increment = int(line.split(':')[1].strip())
+            elif line.startswith('time values'):
+                continue
+            elif in_time and line and not line.startswith('time set'):
+                try:
+                    time_values.extend(float(v) for v in line.split())
+                except ValueError:
+                    pass
+
+    for i, t in enumerate(time_values):
+        step_num = start_num + i * increment
+        step_times[step_num] = t
+
+    return step_times
+
+
 def quad_area(coords):
     """Area of a planar quad via two triangle cross products."""
     p = coords
@@ -175,42 +218,7 @@ def main():
     D_vals = list(D_per_elem.values())
     print(f"  D range: {min(D_vals):.4E} — {max(D_vals):.4E} m2/s")
 
-    tmpdir = tempfile.mkdtemp()
-    try:
-        with tarfile.open(args.ensi_tarball, 'r:*') as tar:
-            tar.extractall(tmpdir)
-
-        ensi_files = find_ensi_files(tmpdir, args.jobname)
-
-        conc_field = None
-        field_label = None
-        for var_type in ('NDTTR', 'NDPTL'):
-            if var_type in ensi_files:
-                _, last_path = sorted(ensi_files[var_type])[-1]
-                conc_field = parse_ensi_scalar(last_path)
-                field_label = var_type
-                print(f"  Loaded {var_type} (step {sorted(ensi_files[var_type])[-1][0]}): "
-                      f"{len(conc_field)} values")
-                break
-
-        if conc_field is None:
-            print("Error: no NDTTR or NDPTL field found in tarball.", file=sys.stderr)
-            sys.exit(1)
-        if len(conc_field) != nn:
-            print(f"Error: field has {len(conc_field)} values, expected {nn}.", file=sys.stderr)
-            sys.exit(1)
-
-    finally:
-        shutil.rmtree(tmpdir)
-
-    print(f"Computing flux on {args.face} face along {args.axis}-axis...")
-    total_mol_s, n_elems = compute_downstream_flux(
-        nodes, elements, D_per_elem, conc_field, args.axis, args.face, args.tol)
-
-    flux_pa_m3_s = total_mol_s * R_GAS * args.temp_ambient
-    flux_mbar_l_s = flux_pa_m3_s * 10.0
-
-    # Face area (bounding box of downstream face nodes)
+    # Face area (bounding box of downstream face nodes) — same for all steps
     ax = {'x': 0, 'y': 1, 'z': 2}[args.axis]
     all_ax = [c[ax] for c in nodes.values()]
     face_coord = max(all_ax) if args.face == 'max' else min(all_ax)
@@ -219,36 +227,70 @@ def main():
     span = [(max(c[a] for c in face_node_coords) - min(c[a] for c in face_node_coords))
             for a in other]
     face_area = span[0] * span[1]
-    flux_density = total_mol_s / face_area if face_area > 0 else 0.0
 
-    report_lines = [
-        "Permeation Flux Report",
-        "=" * 42,
-        "",
-        f"Mesh:              {os.path.basename(args.mesh_d)}",
-        f"Concentration:     {field_label}",
-        f"Downstream face:   {args.face} along {args.axis}-axis",
-        f"Face elements:     {n_elems}",
-        f"Face area:         {face_area:.6E} m2",
-        f"Ambient temp:      {args.temp_ambient:.2f} K",
-        "",
-        "Total flow rate",
-        "-" * 42,
-        f"  {total_mol_s:.6E}  mol/s",
-        f"  {flux_pa_m3_s:.6E}  Pa.m3/s",
-        f"  {flux_mbar_l_s:.6E}  mbar.L/s",
-        "",
-        "Flux density (per unit area)",
-        "-" * 42,
-        f"  {flux_density:.6E}  mol/m2/s",
-        "",
-    ]
+    tmpdir = tempfile.mkdtemp()
+    try:
+        with tarfile.open(args.ensi_tarball, 'r:*') as tar:
+            tar.extractall(tmpdir)
 
-    with open(args.output, 'w') as f:
-        f.write('\n'.join(report_lines))
+        step_times = parse_ensi_case(tmpdir, args.jobname)
+        ensi_files = find_ensi_files(tmpdir, args.jobname)
 
-    for line in report_lines:
-        print(line)
+        field_label = None
+        all_steps = None
+        for var_type in ('NDTTR', 'NDPTL'):
+            if var_type in ensi_files:
+                field_label = var_type
+                all_steps = sorted(ensi_files[var_type])
+                break
+
+        if all_steps is None:
+            print("Error: no NDTTR or NDPTL field found in tarball.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Found {len(all_steps)} timestep(s) of {field_label}")
+        print(f"Computing flux on {args.face} face along {args.axis}-axis...")
+
+        rows = []
+        for step_num, path in all_steps:
+            conc_field = parse_ensi_scalar(path)
+            if len(conc_field) != nn:
+                print(f"  Warning: step {step_num} has {len(conc_field)} values, "
+                      f"expected {nn} — skipping", file=sys.stderr)
+                continue
+
+            total_mol_s, n_elems = compute_downstream_flux(
+                nodes, elements, D_per_elem, conc_field, args.axis, args.face, args.tol)
+
+            flux_pa_m3_s = total_mol_s * R_GAS * args.temp_ambient
+            flux_mbar_l_s = flux_pa_m3_s * 10.0
+            flux_density = total_mol_s / face_area if face_area > 0 else 0.0
+            sim_time = step_times.get(step_num, float('nan'))
+
+            rows.append({
+                'step': step_num,
+                'time_s': sim_time,
+                'flux_mol_s': total_mol_s,
+                'flux_pa_m3_s': flux_pa_m3_s,
+                'flux_mbar_l_s': flux_mbar_l_s,
+                'flux_density_mol_m2_s': flux_density,
+            })
+            print(f"  Step {step_num:6d}  t={sim_time:.4E} s  "
+                  f"J={flux_mbar_l_s:.4E} mbar.L/s")
+
+    finally:
+        shutil.rmtree(tmpdir)
+
+    fieldnames = ['step', 'time_s', 'flux_mol_s', 'flux_pa_m3_s',
+                  'flux_mbar_l_s', 'flux_density_mol_m2_s']
+    with open(args.output, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"\nWrote {len(rows)} row(s) to {args.output}")
+    print(f"Face: {args.face} along {args.axis}-axis  |  Area: {face_area:.6E} m2  |  "
+          f"Field: {field_label}  |  Ambient: {args.temp_ambient:.2f} K")
 
 
 if __name__ == '__main__':
