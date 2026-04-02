@@ -166,7 +166,13 @@
             "type": "parameter_input",
             "uuid": "c20c0c76-a057-447c-9535-bd173337d05f",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "23dcfcb5-cca7-4bc9-810f-2706f0baffaa"
+                }
+            ]
         },
         "1": {
             "annotation": "",
@@ -193,7 +199,13 @@
             "type": "parameter_input",
             "uuid": "d6ac2017-8fa2-420e-ac18-a5154fe9fba5",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "87505165-3ba6-47b7-9016-046f31424b3e"
+                }
+            ]
         },
         "2": {
             "annotation": "",
@@ -220,7 +232,13 @@
             "type": "parameter_input",
             "uuid": "ff59a585-08f6-46b1-ba72-c67aab9de339",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "5f51ff61-46fb-4b91-92c3-cd8aaf1daff6"
+                }
+            ]
         },
         "3": {
             "annotation": "",
@@ -247,7 +265,13 @@
             "type": "parameter_input",
             "uuid": "24d37168-b2f4-43cc-a49b-3640af58a86d",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "312d0582-303f-4bcb-8d45-03d65e7c8c4c"
+                }
+            ]
         },
         "4": {
             "annotation": "",
@@ -274,7 +298,13 @@
             "type": "parameter_input",
             "uuid": "8aaa7791-b6e9-49c7-ae25-13b5a5ff990a",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "eef84979-5455-4e62-af05-3288d5aa0993"
+                }
+            ]
         },
         "5": {
             "annotation": "",
@@ -301,7 +331,13 @@
             "type": "parameter_input",
             "uuid": "7aab2e95-45a5-42aa-add7-efac84bf8e3d",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "f70b0c3f-f831-481c-b857-19da44a02c52"
+                }
+            ]
         },
         "6": {
             "annotation": "",
@@ -328,7 +364,13 @@
             "type": "parameter_input",
             "uuid": "894b210e-4e8f-42b1-a443-dd02ca105522",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "8b34deb5-5f34-4924-82fb-426e54fded4b"
+                }
+            ]
         },
         "7": {
             "annotation": "",
@@ -355,7 +397,13 @@
             "type": "parameter_input",
             "uuid": "f50aec85-a31b-40c3-8df6-825c88c6041a",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "3eafc669-44d3-4f6d-b1f0-6fd79d4ea733"
+                }
+            ]
         },
         "8": {
             "annotation": "",
@@ -382,7 +430,13 @@
             "type": "parameter_input",
             "uuid": "09b674da-0312-4180-bca2-e0f2776ff844",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "43836452-06d7-4a65-b4fd-d661d34ea595"
+                }
+            ]
         },
         "9": {
             "annotation": "",
@@ -409,7 +463,13 @@
             "type": "parameter_input",
             "uuid": "7d03cf0e-9d12-4ddb-829c-db79919e5b95",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "f4dbedd3-dbbe-4b41-b6fe-c83fabfe1902"
+                }
+            ]
         },
         "10": {
             "annotation": "Material selection from database",
@@ -436,7 +496,13 @@
             "type": "parameter_input",
             "uuid": "a1b2c3d4-0002-4000-8000-000000000000",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "9357c391-0c5a-4b42-91bf-63a4c5f00726"
+                }
+            ]
         },
         "11": {
             "annotation": "Upstream Hydrogen Pressure (Pa)",
@@ -463,7 +529,13 @@
             "type": "parameter_input",
             "uuid": "a1b2c3d4-0000-4000-8000-000000000000",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "e465d92e-4e45-41c5-ae77-7ac32c02809a"
+                }
+            ]
         },
         "12": {
             "annotation": "Downstream Hydrogen Pressure (Pa)",
@@ -490,7 +562,13 @@
             "type": "parameter_input",
             "uuid": "a1b2c3d4-0001-4000-8000-000000000000",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "defd9661-6eb6-45bf-a525-797563fb64a6"
+                }
+            ]
         },
         "13": {
             "annotation": "Set to 1e10 for 'steady-state' case",
@@ -517,7 +595,13 @@
             "type": "parameter_input",
             "uuid": "2055c95d-cf8a-4ca6-81ec-3ca0c87e9d97",
             "when": null,
-            "workflow_outputs": []
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "73adc18d-ef19-4bb5-abaa-7786390f54a5"
+                }
+            ]
         },
         "14": {
             "annotation": "Mesh Generation (Structured Hex)",
@@ -1077,7 +1161,13 @@
             ]
         }
     },
-    "tags": [],
+    "tags": [
+        "parafem",
+        "permeation",
+        "steady-state",
+        "thermal",
+        "cube"
+    ],
     "uuid": "1764e710-1c80-426d-93aa-009346fb09f3",
     "version": 8
 }
