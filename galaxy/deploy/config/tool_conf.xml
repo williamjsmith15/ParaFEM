@@ -29,5 +29,6 @@
         <tool file="/galaxy/server/parafem/tools/gdps_postprocess/gdps_postprocess.xml" />
         <tool file="/galaxy/server/parafem/tools/gdps_parafem2vtu/gdps_parafem2vtu.xml" />
         <tool file="/galaxy/server/parafem/tools/gdps_parafem2vtu_transient/gdps_parafem2vtu_transient.xml" />
+        <tool file="/galaxy/server/parafem/tools/gdps_vtu_stitch/gdps_vtu_stitch.xml" />
     </section>
 </toolbox>

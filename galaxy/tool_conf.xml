@@ -27,7 +27,9 @@
     </section>
     <section id="gdps_postprocessing" name="GDPS Post-Processing">
         <tool file="tools/gdps_postprocess/gdps_postprocess.xml" />
+        <tool file="tools/gdps_permeation_flux/gdps_permeation_flux.xml" />
         <tool file="tools/gdps_parafem2vtu/gdps_parafem2vtu.xml" />
         <tool file="tools/gdps_parafem2vtu_transient/gdps_parafem2vtu_transient.xml" />
+        <tool file="tools/gdps_vtu_stitch/gdps_vtu_stitch.xml" />
     </section>
 </toolbox>

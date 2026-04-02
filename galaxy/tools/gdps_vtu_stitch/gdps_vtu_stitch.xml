@@ -1,0 +1,57 @@
+<tool id="gdps_vtu_stitch" name="VTU Time Series Stitch" version="0.1.0">
+
+    <description>Stitch IC chain VTU archives into one continuous time series</description>
+
+    <requirements>
+        <container type="docker">williamjsmith15/parafem-vtu:latest</container>
+    </requirements>
+
+    <command><![CDATA[
+        python3 '$__tool_directory__/gdps_vtu_stitch.py'
+        #for $seg in $segments
+            --input '$seg.vtu_archive'
+        #end for
+        --output '$output_tarball'
+        2>&1
+    ]]></command>
+
+    <inputs>
+        <repeat name="segments" title="VTU Archive" min="2"
+                help="Add one entry per IC chain segment, in chronological order.">
+            <param type="data" name="vtu_archive" format="tar.gz"
+                   label="VTU archive (.tar.gz)"
+                   help="Output from 'ParaFEM to VTU (Transient)' for this segment." />
+        </repeat>
+    </inputs>
+
+    <outputs>
+        <data format="tar.gz" name="output_tarball"
+              label="Stitched VTK time series (.tar.gz)" />
+    </outputs>
+
+    <help>
+Stitches together multiple VTU time series archives from an IC chain run into a
+single continuous time series for ParaView.
+
+**Inputs**
+
+Add one VTU archive per segment of the IC chain, in chronological order. Each
+archive should be the output of the *ParaFEM to VTU (Transient)* tool applied
+to one solver segment.
+
+**Time continuity**
+
+Timestamps from each segment are offset by the cumulative end time of all
+preceding segments, producing a seamless timeline. The final state of each
+segment is used as the initial condition for the next — the VTU outputs
+themselves do not overlap, so no frames are dropped.
+
+**Outputs**
+
+A .tar.gz containing:
+
+- ``stitched.pvd`` — open this in ParaView to view the full time series
+- ``stitched_NNNNNN.vtu`` — one file per timestep across all segments
+
+    </help>
+</tool>
