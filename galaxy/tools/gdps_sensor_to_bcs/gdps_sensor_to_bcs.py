@@ -21,18 +21,28 @@ from parafem_common import (
 
 def write_bcs_from_sensor(filepath, rows, zone_template, nodes, boundary_nodes,
                           bc_mode, bc_axis, nsets, dtim):
+    # Group sensor readings by simulation step, accumulating values for averaging
+    col_names = [entry['col_name'] for entry in zone_template]
+    step_accum = {}
+    for row in rows:
+        elapsed = float(row['elapsed_seconds'])
+        step = round(elapsed / dtim)
+        if step == 0:
+            continue
+        if step not in step_accum:
+            step_accum[step] = {col: [] for col in col_names}
+        for col in col_names:
+            step_accum[step][col].append(float(row[col]))
+
     with open(filepath, 'w') as f:
-        for row in rows:
-            elapsed = float(row['elapsed_seconds'])
-            step = round(elapsed / dtim)
-            if step == 0:
-                continue
+        for step in sorted(step_accum.keys()):
+            col_avgs = {col: sum(vals) / len(vals) for col, vals in step_accum[step].items()}
 
             zones = []
             for entry in zone_template:
                 col = entry['col_name']
                 zone = {k: v for k, v in entry.items() if k != 'col_name'}
-                zone['temperature'] = float(row[col])
+                zone['temperature'] = col_avgs[col]
                 zones.append(zone)
 
             if bc_mode == 'zone':
