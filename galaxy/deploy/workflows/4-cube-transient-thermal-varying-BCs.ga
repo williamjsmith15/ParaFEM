@@ -1,8 +1,107 @@
 {
     "a_galaxy_workflow": "true",
-    "annotation": "Phase 4b: transient thermal with pre-computed BC schedule. Mesh -> BC gen -> BC schedule -> solver -> VTU.",
+    "annotation": "Transient thermal computed BC schedule (idea to be from InfluxDB data dump over period of time)",
+    "comments": [
+        {
+            "child_steps": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16
+            ],
+            "color": "none",
+            "data": {
+                "title": "Inputs"
+            },
+            "id": 0,
+            "position": [
+                0,
+                0
+            ],
+            "size": [
+                240,
+                1742.2
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                17,
+                18,
+                19
+            ],
+            "color": "red",
+            "data": {
+                "title": "Pre-Processing"
+            },
+            "id": 1,
+            "position": [
+                400,
+                350
+            ],
+            "size": [
+                540,
+                1004.3
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                20
+            ],
+            "color": "orange",
+            "data": {
+                "title": "Simulation"
+            },
+            "id": 2,
+            "position": [
+                1130,
+                670
+            ],
+            "size": [
+                240,
+                386.3
+            ],
+            "type": "frame"
+        },
+        {
+            "child_steps": [
+                21
+            ],
+            "color": "green",
+            "data": {
+                "title": "Post-Processing"
+            },
+            "id": 3,
+            "position": [
+                1420,
+                1200
+            ],
+            "size": [
+                240,
+                325.5
+            ],
+            "type": "frame"
+        }
+    ],
     "format-version": "0.1",
-    "name": "GDPS Transient with BC Schedule",
+    "name": "Cube Transient Thermal - Varying BCs",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
     "steps": {
         "0": {
             "annotation": "",
@@ -20,11 +119,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 0
+                "left": 20,
+                "top": 40
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false, \"default\": 5}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "db451f61-1173-4ff1-aaef-b2d8ff4e7ad6",
@@ -47,11 +146,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 60
+                "left": 20,
+                "top": 140
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false, \"default\": 5}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "27ec4b72-e5b8-4f96-8160-daea50315b3e",
@@ -74,11 +173,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 120
+                "left": 20,
+                "top": 240
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false, \"default\": 5}",
+            "tool_state": "{\"default\": 5, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "3b25ca29-d2f3-47c8-97de-f03dfcd08a20",
@@ -101,11 +200,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 180
+                "left": 20,
+                "top": 340
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 1.0}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "e5118ba0-18e0-4ca7-b492-3e52ded9afa6",
@@ -128,11 +227,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 240
+                "left": 20,
+                "top": 440
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 1.0}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "1ce26345-20e3-4809-98e3-6f3066ca30d9",
@@ -155,11 +254,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 300
+                "left": 20,
+                "top": 540
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 1.0}",
+            "tool_state": "{\"default\": 1.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "a1a0c49b-4e05-46f9-a34b-b6ee626d42bf",
@@ -182,11 +281,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 360
+                "left": 20,
+                "top": 640
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 50.0}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "5be81d94-19c7-4557-aeb8-fb2c494d6eaa",
@@ -209,11 +308,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 420
+                "left": 20,
+                "top": 740
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 50.0}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "6ae38be3-1233-46cf-a628-55d3fc3ddd7a",
@@ -236,11 +335,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 480
+                "left": 20,
+                "top": 840
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 50.0}",
+            "tool_state": "{\"default\": 50.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "a316358d-6b09-4d94-9ef1-0058186cea9e",
@@ -263,11 +362,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 540
+                "left": 20,
+                "top": 940
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 7800.0}",
+            "tool_state": "{\"default\": 7800.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "215d8816-eb7a-470b-80b8-92ad3026a0c9",
@@ -290,11 +389,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 600
+                "left": 20,
+                "top": 1040
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 500.0}",
+            "tool_state": "{\"default\": 500.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "22ec60e9-b5c7-41db-8106-c848be90020b",
@@ -317,11 +416,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 660
+                "left": 20,
+                "top": 1140
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 293.0}",
+            "tool_state": "{\"default\": 293.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "ef7c5389-4ca8-4b26-a3e7-a7f66ac33616",
@@ -344,11 +443,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 720
+                "left": 20,
+                "top": 1240
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"float\", \"optional\": false, \"default\": 500.0}",
+            "tool_state": "{\"default\": 500.0, \"validators\": [], \"parameter_type\": \"float\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "7c2d3eec-0b48-4295-b097-b3b2bfc5d1a0",
@@ -371,11 +470,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 780
+                "left": 20,
+                "top": 1340
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false, \"default\": 100}",
+            "tool_state": "{\"default\": 100, \"validators\": [], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "d0d3049a-097d-480f-b2bb-ee040c578703",
@@ -383,14 +482,14 @@
             "workflow_outputs": []
         },
         "14": {
-            "annotation": "",
+            "annotation": "Output every n steps",
             "content_id": null,
             "errors": null,
             "id": 14,
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "",
+                    "description": "Output every n steps",
                     "name": "Output interval (npri)"
                 }
             ],
@@ -398,11 +497,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 840
+                "left": 20,
+                "top": 1440
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false, \"default\": 10}",
+            "tool_state": "{\"default\": 1, \"validators\": [{\"min\": null, \"max\": null, \"negate\": false, \"type\": \"in_range\"}], \"parameter_type\": \"integer\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "36976eb3-fecb-4535-93ef-c78fc659fc1a",
@@ -425,11 +524,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 900
+                "left": 20,
+                "top": 1540
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"text\", \"optional\": false, \"default\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 500.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]\"}",
+            "tool_state": "{\"default\": \"[{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 500.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]\", \"validators\": [], \"parameter_type\": \"text\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "9a188aed-530f-4b81-8c9e-cc592e54a528",
@@ -452,11 +551,11 @@
             "name": "Input parameter",
             "outputs": [],
             "position": {
-                "left": 0,
-                "top": 960
+                "left": 20,
+                "top": 1640
             },
             "tool_id": null,
-            "tool_state": "{\"parameter_type\": \"text\", \"optional\": false, \"default\": \"[{\\\"step\\\": 50, \\\"zones\\\": [{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 550.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]}, {\\\"step\\\": 100, \\\"zones\\\": [{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 600.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]}]\"}",
+            "tool_state": "{\"default\": \"[{\\\"step\\\": 1, \\\"zones\\\": [{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 500.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]}, {\\\"step\\\": 50, \\\"zones\\\": [{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 650.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]}, {\\\"step\\\": 100, \\\"zones\\\": [{\\\"axis_min\\\": 0.0, \\\"axis_max\\\": 0.05, \\\"temperature\\\": 800.0}, {\\\"axis_min\\\": 0.95, \\\"axis_max\\\": 1.0, \\\"temperature\\\": 293.0}]}]\", \"multiple\": false, \"validators\": [], \"parameter_type\": \"text\", \"optional\": false}",
             "tool_version": null,
             "type": "parameter_input",
             "uuid": "521cb775-3e8b-4eea-9fb6-ef1214481d33",
@@ -469,18 +568,6 @@
             "errors": null,
             "id": 17,
             "input_connections": {
-                "nxe": {
-                    "id": 0,
-                    "output_name": "output"
-                },
-                "nye": {
-                    "id": 1,
-                    "output_name": "output"
-                },
-                "nze": {
-                    "id": 2,
-                    "output_name": "output"
-                },
                 "dim_x": {
                     "id": 3,
                     "output_name": "output"
@@ -492,19 +579,40 @@
                 "dim_z": {
                     "id": 5,
                     "output_name": "output"
+                },
+                "nxe": {
+                    "id": 0,
+                    "output_name": "output"
+                },
+                "nye": {
+                    "id": 1,
+                    "output_name": "output"
+                },
+                "nze": {
+                    "id": 2,
+                    "output_name": "output"
                 }
             },
             "inputs": [],
             "label": "Mesh Generation",
-            "name": "",
-            "outputs": [],
+            "name": "ParaFEM Box Mesh Generator",
+            "outputs": [
+                {
+                    "name": "output_d",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_bnd",
+                    "type": "txt"
+                }
+            ],
             "position": {
-                "left": 400,
-                "top": 200
+                "left": 420,
+                "top": 390
             },
             "post_job_actions": {},
             "tool_id": "gdps_meshgen_box",
-            "tool_state": "{\"nxe\": {\"__class__\": \"ConnectedValue\"}, \"nye\": {\"__class__\": \"ConnectedValue\"}, \"nze\": {\"__class__\": \"ConnectedValue\"}, \"dim_x\": {\"__class__\": \"ConnectedValue\"}, \"dim_y\": {\"__class__\": \"ConnectedValue\"}, \"dim_z\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"dim_x\": {\"__class__\": \"ConnectedValue\"}, \"dim_y\": {\"__class__\": \"ConnectedValue\"}, \"dim_z\": {\"__class__\": \"ConnectedValue\"}, \"nxe\": {\"__class__\": \"ConnectedValue\"}, \"nye\": {\"__class__\": \"ConnectedValue\"}, \"nze\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "a03763ce-c786-4594-8a58-313697b5b484",
@@ -517,9 +625,13 @@
             "errors": null,
             "id": 18,
             "input_connections": {
-                "mesh_d": {
-                    "id": 17,
-                    "output_name": "output_d"
+                "cp": {
+                    "id": 10,
+                    "output_name": "output"
+                },
+                "dtim": {
+                    "id": 12,
+                    "output_name": "output"
                 },
                 "kx": {
                     "id": 6,
@@ -533,28 +645,24 @@
                     "id": 8,
                     "output_name": "output"
                 },
-                "rho": {
-                    "id": 9,
-                    "output_name": "output"
+                "mesh_d": {
+                    "id": 17,
+                    "output_name": "output_d"
                 },
-                "cp": {
-                    "id": 10,
-                    "output_name": "output"
-                },
-                "val0": {
-                    "id": 11,
-                    "output_name": "output"
-                },
-                "dtim": {
-                    "id": 12,
+                "npri": {
+                    "id": 14,
                     "output_name": "output"
                 },
                 "nstep": {
                     "id": 13,
                     "output_name": "output"
                 },
-                "npri": {
-                    "id": 14,
+                "rho": {
+                    "id": 9,
+                    "output_name": "output"
+                },
+                "val0": {
+                    "id": 11,
                     "output_name": "output"
                 },
                 "zone_config": {
@@ -564,15 +672,36 @@
             },
             "inputs": [],
             "label": "BC + Material Generation",
-            "name": "",
-            "outputs": [],
+            "name": "ParaFEM Transient Thermal BC Generator",
+            "outputs": [
+                {
+                    "name": "output_d",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_bnd",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_fix",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_dat",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_mat",
+                    "type": "txt"
+                }
+            ],
             "position": {
-                "left": 700,
-                "top": 200
+                "left": 720,
+                "top": 610
             },
             "post_job_actions": {},
             "tool_id": "gdps_bc_transient",
-            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"kx\": {\"__class__\": \"ConnectedValue\"}, \"ky\": {\"__class__\": \"ConnectedValue\"}, \"kz\": {\"__class__\": \"ConnectedValue\"}, \"rho\": {\"__class__\": \"ConnectedValue\"}, \"cp\": {\"__class__\": \"ConnectedValue\"}, \"val0\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"nstep\": {\"__class__\": \"ConnectedValue\"}, \"npri\": {\"__class__\": \"ConnectedValue\"}, \"zone_config\": {\"__class__\": \"ConnectedValue\"}, \"theta\": \"0.5\", \"tol\": \"1.0e-6\", \"limit\": \"2000\", \"bc_mode\": {\"mode\": \"zone\", \"bc_axis\": \"z\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bc_mode\": {\"mode\": \"zone\", \"__current_case__\": 0, \"bc_axis\": \"z\"}, \"cp\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"kx\": {\"__class__\": \"ConnectedValue\"}, \"ky\": {\"__class__\": \"ConnectedValue\"}, \"kz\": {\"__class__\": \"ConnectedValue\"}, \"limit\": \"2000\", \"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"npri\": {\"__class__\": \"ConnectedValue\"}, \"nstep\": {\"__class__\": \"ConnectedValue\"}, \"rho\": {\"__class__\": \"ConnectedValue\"}, \"theta\": \"0.5\", \"tol\": \"1e-06\", \"val0\": {\"__class__\": \"ConnectedValue\"}, \"zone_config\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "63693b3d-0caa-4a73-b7cf-b255f30389e5",
@@ -596,15 +725,20 @@
             },
             "inputs": [],
             "label": "BC Schedule Generation",
-            "name": "",
-            "outputs": [],
+            "name": "ParaFEM BC Schedule Generator",
+            "outputs": [
+                {
+                    "name": "output_bcs",
+                    "type": "txt"
+                }
+            ],
             "position": {
-                "left": 1000,
-                "top": 200
+                "left": 720,
+                "top": 1170
             },
             "post_job_actions": {},
             "tool_id": "gdps_bc_schedule",
-            "tool_state": "{\"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"schedule_config\": {\"__class__\": \"ConnectedValue\"}, \"bc_mode\": {\"mode\": \"zone\", \"bc_axis\": \"z\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bc_mode\": {\"mode\": \"zone\", \"__current_case__\": 0, \"bc_axis\": \"z\"}, \"mesh_d\": {\"__class__\": \"ConnectedValue\"}, \"schedule_config\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.1.0",
             "type": "tool",
             "uuid": "4ec476c2-e5b8-453e-b18a-aab9dbb8dba0",
@@ -617,42 +751,55 @@
             "errors": null,
             "id": 20,
             "input_connections": {
-                "d_file": {
-                    "id": 18,
-                    "output_name": "output_d"
+                "bcs_file": {
+                    "id": 19,
+                    "output_name": "output_bcs"
                 },
                 "bnd_file": {
                     "id": 18,
                     "output_name": "output_bnd"
                 },
-                "fix_file": {
+                "d_file": {
                     "id": 18,
-                    "output_name": "output_fix"
+                    "output_name": "output_d"
                 },
                 "dat_file": {
                     "id": 18,
                     "output_name": "output_dat"
                 },
+                "fix_file": {
+                    "id": 18,
+                    "output_name": "output_fix"
+                },
                 "mat_file": {
                     "id": 18,
                     "output_name": "output_mat"
-                },
-                "bcs_file": {
-                    "id": 19,
-                    "output_name": "output_bcs"
                 }
             },
             "inputs": [],
             "label": "Transient Solver",
-            "name": "",
-            "outputs": [],
+            "name": "ParaFEM Transient Thermal Solver",
+            "outputs": [
+                {
+                    "name": "output_res",
+                    "type": "txt"
+                },
+                {
+                    "name": "output_ensi",
+                    "type": "tar.gz"
+                },
+                {
+                    "name": "output_chk",
+                    "type": "chk"
+                }
+            ],
             "position": {
-                "left": 1300,
-                "top": 200
+                "left": 1150,
+                "top": 710
             },
             "post_job_actions": {},
             "tool_id": "gdps_transient_thermal",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"bcs_file\": {\"__class__\": \"ConnectedValue\"}, \"ic_type\": {\"mode\": \"uniform\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"d_file\": {\"__class__\": \"ConnectedValue\"}, \"dat_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ic_type\": {\"mode\": \"uniform\", \"__current_case__\": 0}, \"mat_file\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "8b1129a4-564b-450e-82be-a0190121a625",
@@ -665,38 +812,68 @@
             "errors": null,
             "id": 21,
             "input_connections": {
-                "d_file": {
-                    "id": 18,
-                    "output_name": "output_d"
+                "bcs_file": {
+                    "id": 19,
+                    "output_name": "output_bcs"
                 },
                 "bnd_file": {
                     "id": 18,
                     "output_name": "output_bnd"
                 },
-                "fix_file": {
+                "d_file": {
                     "id": 18,
-                    "output_name": "output_fix"
+                    "output_name": "output_d"
+                },
+                "dtim": {
+                    "id": 12,
+                    "output_name": "output"
                 },
                 "ensi_tarball": {
                     "id": 20,
                     "output_name": "output_ensi"
                 },
-                "dtim": {
-                    "id": 12,
-                    "output_name": "output"
+                "fix_file": {
+                    "id": 18,
+                    "output_name": "output_fix"
                 }
             },
-            "inputs": [],
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "bcs_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "bnd_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "d_file"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "ensi_tarball"
+                },
+                {
+                    "description": "runtime parameter for tool ParaFEM to VTU (Transient)",
+                    "name": "fix_file"
+                }
+            ],
             "label": "VTU Output",
-            "name": "",
-            "outputs": [],
+            "name": "ParaFEM to VTU (Transient)",
+            "outputs": [
+                {
+                    "name": "output_tarball",
+                    "type": "tar.gz"
+                }
+            ],
             "position": {
-                "left": 1600,
-                "top": 200
+                "left": 1440,
+                "top": 1240
             },
             "post_job_actions": {},
             "tool_id": "gdps_parafem2vtu_transient",
-            "tool_state": "{\"d_file\": {\"__class__\": \"ConnectedValue\"}, \"bnd_file\": {\"__class__\": \"ConnectedValue\"}, \"fix_file\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"ConnectedValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"bcs_file\": {\"__class__\": \"RuntimeValue\"}, \"bnd_file\": {\"__class__\": \"RuntimeValue\"}, \"d_file\": {\"__class__\": \"RuntimeValue\"}, \"dtim\": {\"__class__\": \"ConnectedValue\"}, \"ensi_tarball\": {\"__class__\": \"RuntimeValue\"}, \"field_name\": \"Temperature (K)\", \"fix_file\": {\"__class__\": \"RuntimeValue\"}, \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
             "tool_version": "0.2.0",
             "type": "tool",
             "uuid": "1371f5ef-2be6-40f5-9fc9-5b269fbf0cd4",
@@ -704,5 +881,13 @@
             "workflow_outputs": []
         }
     },
-    "uuid": "21a01952-7626-4d3c-a328-707b4e94a349"
+    "tags": [
+        "cube",
+        "thermal",
+        "transient",
+        "varying-bcs",
+        "parafem"
+    ],
+    "uuid": "fa188906-740d-4b24-91f3-13cdeed8cfc1",
+    "version": 7
 }

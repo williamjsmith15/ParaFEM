@@ -20,6 +20,32 @@ from parafem_common import (
 )
 
 
+def interpolate_schedule(schedule):
+    """Expand a sparse schedule by linearly interpolating between consecutive entries.
+
+    For each pair of adjacent schedule steps, generates an entry for every
+    intermediate step with temperatures interpolated per zone.
+    """
+    if len(schedule) < 2:
+        return list(schedule)
+
+    expanded = []
+    for i in range(len(schedule) - 1):
+        a = schedule[i]
+        b = schedule[i + 1]
+        step_a, step_b = a['step'], b['step']
+        for step in range(step_a, step_b):
+            t = (step - step_a) / (step_b - step_a)
+            zones = []
+            for za, zb in zip(a['zones'], b['zones']):
+                zone = {k: v for k, v in za.items() if k != 'temperature'}
+                zone['temperature'] = za['temperature'] + t * (zb['temperature'] - za['temperature'])
+                zones.append(zone)
+            expanded.append({'step': step, 'zones': zones})
+    expanded.append(schedule[-1])
+    return expanded
+
+
 def write_bcs(filepath, schedule, nodes, boundary_nodes, bc_mode, bc_axis, nsets):
     """
     Writes a .bcs file from a schedule configuration.
@@ -65,6 +91,9 @@ def main():
     else:
         schedule_str = sanitize_zone_json(args.schedule_config)
         schedule = json.loads(schedule_str)
+
+    schedule = interpolate_schedule(schedule)
+    print(f"Parsed schedule: {len(schedule)} steps after interpolation")
 
     print(f"Parsing mesh file: {args.mesh_d}")
     nodes, elements, element_type, nod = parse_d_file(args.mesh_d)
